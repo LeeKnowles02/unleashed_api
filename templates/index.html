@@ -1,25 +1,64 @@
-<!DOCTYPE html>
-<html>
-  <head>
-    <title>Unleashed Runner</title>
-    <style>
-      body {
-        font-family: Arial, sans-serif;
-        margin: 40px;
-      }
-      button {
-        padding: 10px 20px;
-        margin: 10px 0;
-        font-size: 16px;
-        cursor: pointer;
-      }
-    </style>
-  </head>
-  <body>
-    <h1>Unleashed Runner</h1>
-    <p>Select an export:</p>
+{% extends "layout.html" %}
+{% block title %}Dashboard | Unleashed Runner{% endblock %}
 
-    <button>Products</button><br />
-    <button>Stock on Hand</button>
-  </body>
-</html>
+{% block content %}
+  <div class="space-between">
+    <div class="stack-6">
+      <h1 class="h1">Dashboard</h1>
+      <div class="muted">Run exports and view status.</div>
+    </div>
+
+    <div class="row">
+      <button class="btn btn-secondary btn-md">Settings</button>
+      <button class="btn btn-primary btn-md">Run Selected</button>
+    </div>
+  </div>
+
+  <hr class="hr" />
+
+  <div class="card">
+    <div class="card-header">
+      <h2 class="h2">Exports</h2>
+      <div class="muted">UI-only for now. Dummy data next.</div>
+    </div>
+
+    <div class="card-body">
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th style="width: 36px;"></th>
+              <th>Export</th>
+              <th>Last Run</th>
+              <th>Status</th>
+              <th style="width: 140px;">Action</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><input type="checkbox" /></td>
+              <td>Products</td>
+              <td class="muted">—</td>
+              <td><span class="pill pill-neutral">Idle</span></td>
+              <td><button class="btn btn-secondary btn-sm">Run</button></td>
+            </tr>
+            <tr>
+              <td><input type="checkbox" /></td>
+              <td>Stock on Hand</td>
+              <td class="muted">2026-01-23 08:10</td>
+              <td><span class="pill pill-success">Success</span></td>
+              <td><button class="btn btn-secondary btn-sm">Run</button></td>
+            </tr>
+            <tr>
+              <td><input type="checkbox" /></td>
+              <td>Sales Orders</td>
+              <td class="muted">2026-01-23 08:05</td>
+              <td><span class="pill pill-danger">Failed</span></td>
+              <td><button class="btn btn-secondary btn-sm">Run</button></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+{% endblock %}
