@@ -1,6 +1,7 @@
 from flask import Flask, render_template, request, Response
 import csv
 import io
+import zipfile
 
 def products_csv():
     output = io.StringIO()
@@ -33,6 +34,21 @@ def sales_orders_csv():
     writer.writerow(["SO-1002", "Coffee Corner", 1320.00, "Pending"])
 
     return output.getvalue()
+
+EXPORTS = {
+    "products": {
+        "filename": "products.csv",
+        "generator": products_csv,
+    },
+    "stock_on_hand": {
+        "filename": "stock_on_hand.csv",
+        "generator": stock_on_hand_csv,
+    },
+    "sales_orders": {
+        "filename": "sales_orders.csv",
+        "generator": sales_orders_csv,
+    },
+}
 
 app = Flask(__name__)
 
