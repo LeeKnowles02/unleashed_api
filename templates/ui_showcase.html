@@ -1,0 +1,136 @@
+{% extends "layout.html" %}
+{% block title %}UI Showcase | Unleashed Runner{% endblock %}
+
+{% block content %}
+  <div class="space-between">
+    <div class="stack-6">
+      <h1 class="h1">UI Showcase</h1>
+      <div class="muted">Reference page for all component sizing and styles.</div>
+    </div>
+    <button class="btn btn-primary btn-md">Primary</button>
+  </div>
+
+  <div class="stack-24" style="margin-top: 18px;">
+
+    <div class="card">
+      <div class="card-header">
+        <h2 class="h2">Typography</h2>
+        <div class="muted">Use these consistently across pages.</div>
+      </div>
+      <div class="card-body stack-10">
+        <div>
+          <h1 class="h1">Heading 1 (Page title)</h1>
+          <div class="muted">Used at top of each page.</div>
+        </div>
+        <div>
+          <h2 class="h2">Heading 2 (Section)</h2>
+          <div class="muted">Used for major sections and cards.</div>
+        </div>
+        <div>
+          <h3 class="h3">Heading 3 (Subsection)</h3>
+          <div class="muted">Used for smaller groupings.</div>
+        </div>
+        <div>Body text example. Keep body text consistent.</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-header">
+        <h2 class="h2">Buttons</h2>
+        <div class="muted">Buttons use fixed heights so they do not resize.</div>
+      </div>
+      <div class="card-body stack-14">
+        <div class="row">
+          <div style="width: 110px; font-weight: 800;">Primary</div>
+          <button class="btn btn-primary btn-sm">Small</button>
+          <button class="btn btn-primary btn-md">Medium</button>
+          <button class="btn btn-primary btn-lg">Large</button>
+        </div>
+        <div class="row">
+          <div style="width: 110px; font-weight: 800;">Secondary</div>
+          <button class="btn btn-secondary btn-sm">Small</button>
+          <button class="btn btn-secondary btn-md">Medium</button>
+          <button class="btn btn-secondary btn-lg">Large</button>
+        </div>
+        <div class="row">
+          <div style="width: 110px; font-weight: 800;">Ghost</div>
+          <button class="btn btn-ghost btn-sm">Small</button>
+          <button class="btn btn-ghost btn-md">Medium</button>
+          <button class="btn btn-ghost btn-lg">Large</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-header">
+        <h2 class="h2">Inputs</h2>
+        <div class="muted">Standard form controls.</div>
+      </div>
+      <div class="card-body stack-14">
+        <div class="stack-6" style="max-width: 420px;">
+          <div style="font-weight: 800;">Text input</div>
+          <input class="input" placeholder="Search exports..." />
+        </div>
+
+        <div class="stack-6" style="max-width: 420px;">
+          <div style="font-weight: 800;">Select</div>
+          <select class="select">
+            <option>Choose endpoint</option>
+            <option>Products</option>
+            <option>Stock on Hand</option>
+          </select>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-header">
+        <h2 class="h2">Status Pills</h2>
+        <div class="muted">Use for run state and sync state.</div>
+      </div>
+      <div class="card-body row">
+        <span class="pill pill-success">Success</span>
+        <span class="pill pill-warning">Warning</span>
+        <span class="pill pill-danger">Failed</span>
+        <span class="pill pill-info">Running</span>
+        <span class="pill pill-neutral">Idle</span>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-header">
+        <h2 class="h2">Table</h2>
+        <div class="muted">Default list styling.</div>
+      </div>
+      <div class="card-body">
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Item</th>
+                <th>Detail</th>
+                <th>Status</th>
+                <th style="width: 140px;">Action</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>Invoices</td>
+                <td class="muted">Example row</td>
+                <td><span class="pill pill-info">Running</span></td>
+                <td><button class="btn btn-secondary btn-sm">View</button></td>
+              </tr>
+              <tr>
+                <td>Contacts</td>
+                <td class="muted">Example row</td>
+                <td><span class="pill pill-success">Success</span></td>
+                <td><button class="btn btn-secondary btn-sm">View</button></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+  </div>
+{% endblock %}

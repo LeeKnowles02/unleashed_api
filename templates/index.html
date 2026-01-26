@@ -1,25 +1,99 @@
-<!DOCTYPE html>
-<html>
-  <head>
-    <title>Unleashed Runner</title>
-    <style>
-      body {
-        font-family: Arial, sans-serif;
-        margin: 40px;
-      }
-      button {
-        padding: 10px 20px;
-        margin: 10px 0;
-        font-size: 16px;
-        cursor: pointer;
-      }
-    </style>
-  </head>
-  <body>
-    <h1>Unleashed Runner</h1>
-    <p>Select an export:</p>
+{% extends 'layout.html' %}
+{% block title %}
+  Dashboard | Unleashed Runner
+{% endblock %}
 
-    <button>Products</button><br />
-    <button>Stock on Hand</button>
-  </body>
-</html>
+{% block content %}
+  <div class="space-between">
+    <div class="stack-6">
+      <h1 class="h1">Dashboard</h1>
+      <div class="muted">Run exports and download Excel-ready files.</div>
+    </div>
+
+    <div class="row">
+      <button class="btn btn-secondary btn-md" type="button">Settings</button>
+      <button class="btn btn-primary btn-md" type="submit" form="bulkRunForm">Run Selected</button>
+    </div>
+  </div>
+
+  <hr class="hr" />
+
+  <div class="card">
+    <div class="card-header">
+      <h2 class="h2">Exports</h2>
+      <div class="muted">Select one or more exports to run.</div>
+    </div>
+
+    <div class="card-body">
+      <!-- BULK FORM -->
+      <form id="bulkRunForm" method="post" action="/run-selected">
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th class="th-tight"></th>
+                <th>Export</th>
+                <th>Last Run</th>
+                <th>Status</th>
+                <th class="th-action">Action</th>
+              </tr>
+            </thead>
+
+            <tbody>
+              <tr>
+                <td class="td-tight">
+                  <input type="checkbox" name="exports" value="products" />
+                </td>
+                <td>
+                  <strong>Products</strong>
+                  <div class="muted">Master data</div>
+                </td>
+                <td class="muted">—</td>
+                <td>
+                  <span class="pill pill-neutral">Idle</span>
+                </td>
+                <td class="td-action">
+                  <button class="btn btn-secondary btn-sm" type="submit" formaction="/run-single" formmethod="post" name="export" value="products">Run</button>
+                </td>
+              </tr>
+
+              <tr>
+                <td class="td-tight">
+                  <input type="checkbox" name="exports" value="stock_on_hand" />
+                </td>
+                <td>
+                  <strong>Stock on Hand</strong>
+                  <div class="muted">Inventory snapshot</div>
+                </td>
+                <td class="muted">2026-01-23 08:10</td>
+                <td>
+                  <span class="pill pill-success">Success</span>
+                </td>
+                <td class="td-action">
+                  <button class="btn btn-secondary btn-sm" type="submit" formaction="/run-single" formmethod="post" name="export" value="stock_on_hand">Run</button>
+                </td>
+              </tr>
+
+              <tr>
+                <td class="td-tight">
+                  <input type="checkbox" name="exports" value="sales_orders" />
+                </td>
+                <td>
+                  <strong>Sales Orders</strong>
+                  <div class="muted">Transactional</div>
+                </td>
+                <td class="muted">2026-01-23 08:05</td>
+                <td>
+                  <span class="pill pill-danger">Failed</span>
+                </td>
+                <td class="td-action">
+                  <button class="btn btn-secondary btn-sm" type="submit" formaction="/run-single" formmethod="post" name="export" value="sales_orders">Run</button>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </form>
+    </div>
+  </div>
+{% endblock %}
