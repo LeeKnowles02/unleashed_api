@@ -1,5 +1,7 @@
-{% extends "layout.html" %}
-{% block title %}Dashboard | Unleashed Runner{% endblock %}
+{% extends 'layout.html' %}
+{% block title %}
+  Dashboard | Unleashed Runner
+{% endblock %}
 
 {% block content %}
   <div class="space-between">
@@ -10,9 +12,7 @@
 
     <div class="row">
       <button class="btn btn-secondary btn-md" type="button">Settings</button>
-      <button class="btn btn-primary btn-md" type="submit" form="bulkRunForm">
-        Run Selected
-      </button>
+      <button class="btn btn-primary btn-md" type="submit" form="bulkRunForm">Run Selected</button>
     </div>
   </div>
 
@@ -42,59 +42,54 @@
             <tbody>
               <tr>
                 <td class="td-tight">
-                  <input type="checkbox" name="exports" value="products">
+                  <input type="checkbox" name="exports" value="products" />
                 </td>
                 <td>
                   <strong>Products</strong>
                   <div class="muted">Master data</div>
                 </td>
                 <td class="muted">—</td>
-                <td><span class="pill pill-neutral">Idle</span></td>
+                <td>
+                  <span class="pill pill-neutral">Idle</span>
+                </td>
                 <td class="td-action">
-                  <!-- SINGLE RUN -->
-                  <form method="post" action="/run-single">
-                    <input type="hidden" name="export" value="products">
-                    <button class="btn btn-secondary btn-sm">Run</button>
-                  </form>
+                  <button class="btn btn-secondary btn-sm" type="submit" formaction="/run-single" formmethod="post" name="export" value="products">Run</button>
                 </td>
               </tr>
 
               <tr>
                 <td class="td-tight">
-                  <input type="checkbox" name="exports" value="stock_on_hand">
+                  <input type="checkbox" name="exports" value="stock_on_hand" />
                 </td>
                 <td>
                   <strong>Stock on Hand</strong>
                   <div class="muted">Inventory snapshot</div>
                 </td>
                 <td class="muted">2026-01-23 08:10</td>
-                <td><span class="pill pill-success">Success</span></td>
+                <td>
+                  <span class="pill pill-success">Success</span>
+                </td>
                 <td class="td-action">
-                  <form method="post" action="/run-single">
-                    <input type="hidden" name="export" value="stock_on_hand">
-                    <button class="btn btn-secondary btn-sm">Run</button>
-                  </form>
+                  <button class="btn btn-secondary btn-sm" type="submit" formaction="/run-single" formmethod="post" name="export" value="stock_on_hand">Run</button>
                 </td>
               </tr>
 
               <tr>
                 <td class="td-tight">
-                  <input type="checkbox" name="exports" value="sales_orders">
+                  <input type="checkbox" name="exports" value="sales_orders" />
                 </td>
                 <td>
                   <strong>Sales Orders</strong>
                   <div class="muted">Transactional</div>
                 </td>
                 <td class="muted">2026-01-23 08:05</td>
-                <td><span class="pill pill-danger">Failed</span></td>
+                <td>
+                  <span class="pill pill-danger">Failed</span>
+                </td>
                 <td class="td-action">
-                  <form method="post" action="/run-single">
-                    <input type="hidden" name="export" value="sales_orders">
-                    <button class="btn btn-secondary btn-sm">Run</button>
-                  </form>
+                  <button class="btn btn-secondary btn-sm" type="submit" formaction="/run-single" formmethod="post" name="export" value="sales_orders">Run</button>
                 </td>
               </tr>
-
             </tbody>
           </table>
         </div>
