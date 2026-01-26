@@ -5,12 +5,14 @@
   <div class="space-between">
     <div class="stack-6">
       <h1 class="h1">Dashboard</h1>
-      <div class="muted">Run exports and view status.</div>
+      <div class="muted">Run exports and download Excel-ready files.</div>
     </div>
 
     <div class="row">
       <button class="btn btn-secondary btn-md" type="button">Settings</button>
-      <button class="btn btn-primary btn-md" type="button">Run Selected</button>
+      <button class="btn btn-primary btn-md" type="submit" form="bulkRunForm">
+        Run Selected
+      </button>
     </div>
   </div>
 
@@ -18,91 +20,85 @@
 
   <div class="card">
     <div class="card-header">
-      <div class="space-between">
-        <div class="stack-6">
-          <h2 class="h2">Exports</h2>
-          <div class="muted">UI-only for now. Dummy data next.</div>
-        </div>
-
-        <div class="muted" style="font-weight: 700;">
-          Selected: 0
-        </div>
-      </div>
+      <h2 class="h2">Exports</h2>
+      <div class="muted">Select one or more exports to run.</div>
     </div>
 
     <div class="card-body">
-      <div class="table-wrap">
-        <table>
-          <thead>
-            <tr>
-              <th class="th-tight">
-                <!-- Select all (UI only for now) -->
-                <input type="checkbox" aria-label="Select all exports" />
-              </th>
-              <th>Export</th>
-              <th>Last Run</th>
-              <th>Status</th>
-              <th class="th-action">Action</th>
-            </tr>
-          </thead>
+      <!-- BULK FORM -->
+      <form id="bulkRunForm" method="post" action="/run-selected">
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th class="th-tight"></th>
+                <th>Export</th>
+                <th>Last Run</th>
+                <th>Status</th>
+                <th class="th-action">Action</th>
+              </tr>
+            </thead>
 
-          <tbody>
-            <tr>
-              <td class="td-tight">
-                <input type="checkbox" aria-label="Select Products" />
-              </td>
-              <td>
-                <div style="font-weight: 800;">Products</div>
-                <div class="muted" style="font-size: 12px;">Master data</div>
-              </td>
-              <td class="muted">—</td>
-              <td><span class="pill pill-neutral">Idle</span></td>
-              <td class="td-action">
-                <button class="btn btn-secondary btn-sm" type="button">Run</button>
-              </td>
-            </tr>
+            <tbody>
+              <tr>
+                <td class="td-tight">
+                  <input type="checkbox" name="exports" value="products">
+                </td>
+                <td>
+                  <strong>Products</strong>
+                  <div class="muted">Master data</div>
+                </td>
+                <td class="muted">—</td>
+                <td><span class="pill pill-neutral">Idle</span></td>
+                <td class="td-action">
+                  <!-- SINGLE RUN -->
+                  <form method="post" action="/run-single">
+                    <input type="hidden" name="export" value="products">
+                    <button class="btn btn-secondary btn-sm">Run</button>
+                  </form>
+                </td>
+              </tr>
 
-            <tr>
-              <td class="td-tight">
-                <input type="checkbox" aria-label="Select Stock on Hand" />
-              </td>
-              <td>
-                <div style="font-weight: 800;">Stock on Hand</div>
-                <div class="muted" style="font-size: 12px;">Inventory snapshot</div>
-              </td>
-              <td class="muted">2026-01-23 08:10</td>
-              <td><span class="pill pill-success">Success</span></td>
-              <td class="td-action">
-                <button class="btn btn-secondary btn-sm" type="button">Run</button>
-              </td>
-            </tr>
+              <tr>
+                <td class="td-tight">
+                  <input type="checkbox" name="exports" value="stock_on_hand">
+                </td>
+                <td>
+                  <strong>Stock on Hand</strong>
+                  <div class="muted">Inventory snapshot</div>
+                </td>
+                <td class="muted">2026-01-23 08:10</td>
+                <td><span class="pill pill-success">Success</span></td>
+                <td class="td-action">
+                  <form method="post" action="/run-single">
+                    <input type="hidden" name="export" value="stock_on_hand">
+                    <button class="btn btn-secondary btn-sm">Run</button>
+                  </form>
+                </td>
+              </tr>
 
-            <tr>
-              <td class="td-tight">
-                <input type="checkbox" aria-label="Select Sales Orders" />
-              </td>
-              <td>
-                <div style="font-weight: 800;">Sales Orders</div>
-                <div class="muted" style="font-size: 12px;">Transactional</div>
-              </td>
-              <td class="muted">2026-01-23 08:05</td>
-              <td><span class="pill pill-danger">Failed</span></td>
-              <td class="td-action">
-                <button class="btn btn-secondary btn-sm" type="button">Run</button>
-              </td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
+              <tr>
+                <td class="td-tight">
+                  <input type="checkbox" name="exports" value="sales_orders">
+                </td>
+                <td>
+                  <strong>Sales Orders</strong>
+                  <div class="muted">Transactional</div>
+                </td>
+                <td class="muted">2026-01-23 08:05</td>
+                <td><span class="pill pill-danger">Failed</span></td>
+                <td class="td-action">
+                  <form method="post" action="/run-single">
+                    <input type="hidden" name="export" value="sales_orders">
+                    <button class="btn btn-secondary btn-sm">Run</button>
+                  </form>
+                </td>
+              </tr>
 
-      <div class="exports-footer">
-        <div class="muted">Tip: Use “Run Selected” for bulk runs.</div>
-        <div class="row">
-          <button class="btn btn-secondary btn-md" type="button">View Logs</button>
-          <button class="btn btn-primary btn-md" type="button">Run Selected</button>
+            </tbody>
+          </table>
         </div>
-      </div>
-
+      </form>
     </div>
   </div>
 {% endblock %}
