@@ -2,6 +2,38 @@ from flask import Flask, render_template, request, Response
 import csv
 import io
 
+def products_csv():
+    output = io.StringIO()
+    writer = csv.writer(output)
+
+    writer.writerow(["Product Code", "Product Name", "Category", "Price"])
+    writer.writerow(["P001", "Espresso Beans", "Coffee", 120.00])
+    writer.writerow(["P002", "Milk Powder", "Consumables", 85.50])
+
+    return output.getvalue()
+
+
+def stock_on_hand_csv():
+    output = io.StringIO()
+    writer = csv.writer(output)
+
+    writer.writerow(["Product Code", "Warehouse", "Quantity"])
+    writer.writerow(["P001", "Main Warehouse", 340])
+    writer.writerow(["P002", "Main Warehouse", 120])
+
+    return output.getvalue()
+
+
+def sales_orders_csv():
+    output = io.StringIO()
+    writer = csv.writer(output)
+
+    writer.writerow(["Order Number", "Customer", "Total", "Status"])
+    writer.writerow(["SO-1001", "Cafe Nero", 2450.00, "Completed"])
+    writer.writerow(["SO-1002", "Coffee Corner", 1320.00, "Pending"])
+
+    return output.getvalue()
+
 app = Flask(__name__)
 
 @app.route("/")
