@@ -1,0 +1,11 @@
+from datetime import datetime, timezone
+from typing import Optional
+
+def parse_unleashed_dotnet_date(value: Optional[str]) -> Optional[datetime]:
+    if not value or not isinstance(value, str):
+        return None
+    try:
+        ms = int(value.strip("/").replace("Date(", "").replace(")", ""))
+        return datetime.fromtimestamp(ms / 1000, tz=timezone.utc)
+    except Exception:
+        return None
