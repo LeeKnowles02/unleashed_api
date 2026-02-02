@@ -1,3 +1,6 @@
+from dotenv import load_dotenv
+load_dotenv()
+
 from flask import Flask, render_template, request, Response
 from openpyxl import Workbook
 from openpyxl.utils import get_column_letter
@@ -7,8 +10,6 @@ from config import Config
 from unleashed_client import UnleashedClient
 from exports import sales_orders
 
-
-# ---------- Dummy data providers (sheet_name, headers, rows) ----------
 
 def products_dummy():
     return "Products", ["Product Code", "Product Name", "Category", "Price"], [
@@ -24,27 +25,6 @@ def stock_on_hand_dummy():
     ]
 
 
-def sales_orders_dummy():
-    return "SalesOrders", ["Order Number", "Customer", "Total", "Status"], [
-        ["SO-1001", "Cafe Nero", 2450.00, "Completed"],
-        ["SO-1002", "Coffee Corner", 1320.00, "Pending"],
-    ]
-
-
-# ---------- API placeholders (do not implement yet) ----------
-
-def products_from_api(client: UnleashedClient):
-    # Example placeholder:
-    raise NotImplementedError("Products API export not implemented yet.")
-
-
-def stock_on_hand_from_api(client: UnleashedClient):
-    raise NotImplementedError("Stock on Hand API export not implemented yet.")
-
-
-def sales_orders_from_api(client: UnleashedClient):
-    raise NotImplementedError("Sales Orders API export not implemented yet.")
-
 
 cfg = Config()
 
@@ -52,15 +32,18 @@ client = UnleashedClient(
     base_url=cfg.UNLEASHED_BASE_URL,
     api_id=cfg.UNLEASHED_API_ID,
     api_key=cfg.UNLEASHED_API_KEY,
+    client_type=cfg.UNLEASHED_CLIENT_TYPE,
     timeout_seconds=cfg.REQUEST_TIMEOUT_SECONDS,
 )
 
 
-# Registry supports both dummy and api (API is placeholder for now)
 EXPORTS = {
-    "products": {
-        "dummy": products_dummy,
-        "api": lambda: products_from_api(client),
+    "products": {"generator": products_dummy},
+    "stock_on_hand": {"generator": stock_on_hand_dummy},
+
+    "sales_orders": {
+        "dummy": sales_orders.dummy,
+        "api": lambda: sales_orders.from_api(client),
     },
 }
 
@@ -68,12 +51,12 @@ EXPORTS = {
 def run_export(key: str):
     export = EXPORTS.get(key)
     if not export:
-        raise KeyError(f"Unknown export: {key}")
+        raise KeyError(key)
 
-    if not cfg.USE_UNLEASHED_API:
-        return export["dummy"]()
+    if "generator" in export:
+        return export["generator"]()
 
-    if not client.is_configured():
+    if not cfg.USE_UNLEASHED_API or not client.is_configured():
         return export["dummy"]()
 
     return export["api"]()
@@ -108,12 +91,14 @@ def build_workbook(selected_keys):
 
     return wb
 
+
 app = Flask(__name__, template_folder="templates", static_folder="static")
 
 
 @app.route("/")
 def index():
     return render_template("index.html", active_page="dashboard")
+
 
 @app.route("/ui")
 def ui_showcase():
@@ -126,6 +111,7 @@ def api_status():
         "use_unleashed_api": cfg.USE_UNLEASHED_API,
         "configured": client.is_configured(),
         "base_url": client.base_url,
+        "client_type": client.client_type,
     }
 
 
