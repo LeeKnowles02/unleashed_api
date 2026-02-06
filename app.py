@@ -1,4 +1,5 @@
 from dotenv import load_dotenv
+
 load_dotenv()
 
 from flask import Flask, render_template, request, Response
@@ -9,7 +10,7 @@ from typing import Any, Dict, Optional, List
 
 from config import Config
 from unleashed_client import UnleashedClient
-from exports import sales_orders
+from exports import sales_orders, customers
 
 
 def products_dummy():
@@ -66,6 +67,14 @@ EXPORTS = {
         "sheet_name": "SalesOrders",
         "dummy": sales_orders.dummy,
         "api": lambda: sales_orders.from_api(client),
+    },
+    "customers": {
+        "category": "customers",
+        "label": "Customers",
+        "description": "Customer master data",
+        "sheet_name": "Customers",
+        "dummy": customers.dummy,
+        "api": lambda: customers.from_api(client),
     },
 }
 
@@ -150,12 +159,20 @@ def index():
 def exports_by_category(category: str):
     titles = {
         "sales": ("Sales & Revenue", "Sales documents and revenue drivers."),
-        "customers": ("Customers & Sales Dimensions", "Customer master data and segmentation."),
-        "products": ("Products & Cost Foundation", "Product master, groups, and pricing."),
+        "customers": (
+            "Customers & Sales Dimensions",
+            "Customer master data and segmentation.",
+        ),
+        "products": (
+            "Products & Cost Foundation",
+            "Product master, groups, and pricing.",
+        ),
         "inventory": ("Inventory", "Stock position and inventory movements."),
         "purchasing": ("Purchasing", "Supplier master and purchasing documents."),
     }
-    title, subtitle = titles.get(category, ("Exports", "Run exports and download Excel-ready files."))
+    title, subtitle = titles.get(
+        category, ("Exports", "Run exports and download Excel-ready files.")
+    )
 
     return render_template(
         "index.html",
