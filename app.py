@@ -38,10 +38,22 @@ client = UnleashedClient(
 
 
 EXPORTS = {
-    "products": {"generator": products_dummy},
-    "stock_on_hand": {"generator": stock_on_hand_dummy},
-
+    "products": {
+        "label": "Products",
+        "description": "Master data",
+        "sheet_name": "Products",
+        "generator": products_dummy,
+    },
+    "stock_on_hand": {
+        "label": "Stock on Hand",
+        "description": "Inventory snapshot",
+        "sheet_name": "StockOnHand",
+        "generator": stock_on_hand_dummy,
+    },
     "sales_orders": {
+        "label": "Sales Orders",
+        "description": "Transactional",
+        "sheet_name": "SalesOrders",
         "dummy": sales_orders.dummy,
         "api": lambda: sales_orders.from_api(client),
     },
