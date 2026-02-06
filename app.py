@@ -17,12 +17,9 @@ from exports import (
     products,
     warehouses,
     stock_on_hand,
+    sales_shipments,
+    credit_notes,
 )
-
-import exports.warehouses as wh
-print("WAREHOUSES IMPORTED FROM:", wh.__file__)
-print("WAREHOUSES ATTRS:", [a for a in dir(wh) if a in ("dummy", "from_api")])
-
 
 cfg = Config()
 
@@ -43,12 +40,28 @@ EXPORTS = {
         "dummy": products.dummy,
         "api": lambda: products.from_api(client),
     },
+    "credit_notes": {
+        "category": "sales",
+        "label": "Credit Notes",
+        "description": "Returns and revenue corrections",
+        "sheet_name": "CreditNotes",
+        "dummy": credit_notes.dummy,
+        "api": lambda: credit_notes.from_api(client),
+    },
     "warehouses": {
         "category": "inventory",
         "label": "Warehouses",
         "description": "Warehouse master data",
         "sheet_name": "Warehouses",
         "api": lambda: warehouses.from_api(client),
+    },
+    "sales_shipments": {
+        "category": "sales",
+        "label": "Sales Shipments",
+        "description": "Dispatch / fulfilment documents",
+        "sheet_name": "SalesShipments",
+        "dummy": sales_shipments.dummy,
+        "api": lambda: sales_shipments.from_api(client),
     },
     "stock_on_hand_api": {
         "category": "inventory",
