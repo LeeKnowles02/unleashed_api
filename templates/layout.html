@@ -3,11 +3,16 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>{% block title %}Unleashed Runner{% endblock %}</title>
+    <title>
+      {% block title %}
+        Unleashed Runner
+      {% endblock %}
+    </title>
 
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/theme.css') }}">
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/components.css') }}">
-    {% block head %}{% endblock %}
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/theme.css') }}" />
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/components.css') }}" />
+    {% block head %}
+    {% endblock %}
   </head>
 
   <body>
@@ -23,17 +28,25 @@
 
         <nav class="nav">
           <a href="/" class="{% if active_page == 'dashboard' %}active{% endif %}">Dashboard</a>
+          <a href="/exports/sales" class="{% if active_page == 'sales' %}active{% endif %}">Sales & Revenue</a>
+          <a href="/exports/customers" class="{% if active_page == 'customers' %}active{% endif %}">Customers & Sales Dimensions</a>
+          <a href="/exports/products" class="{% if active_page == 'products' %}active{% endif %}">Products & Cost Foundation</a>
+          <a href="/exports/inventory" class="{% if active_page == 'inventory' %}active{% endif %}">Inventory</a>
+          <a href="/exports/purchasing" class="{% if active_page == 'purchasing' %}active{% endif %}">Purchasing</a>
+
           <a href="/ui" class="{% if active_page == 'ui' %}active{% endif %}">UI Showcase</a>
         </nav>
       </aside>
 
       <main class="main">
         <div class="container">
-          {% block content %}{% endblock %}
+          {% block content %}
+          {% endblock %}
         </div>
       </main>
     </div>
 
-    {% block scripts %}{% endblock %}
+    {% block scripts %}
+    {% endblock %}
   </body>
 </html>
