@@ -10,18 +10,7 @@ from typing import Any, Dict, Optional, List
 
 from config import Config
 from unleashed_client import UnleashedClient
-from exports import sales_orders, customers, suppliers
-
-
-def products_dummy():
-    return (
-        "Products",
-        ["Product Code", "Product Name", "Category", "Price"],
-        [
-            ["P001", "Espresso Beans", "Coffee", 120.00],
-            ["P002", "Milk Powder", "Consumables", 85.50],
-        ],
-    )
+from exports import sales_orders, customers, suppliers, products
 
 
 def stock_on_hand_dummy():
@@ -46,12 +35,13 @@ client = UnleashedClient(
 )
 
 EXPORTS = {
-    "products": {
+    "products_api": {
         "category": "products",
         "label": "Products",
-        "description": "Master data",
+        "description": "Product master data",
         "sheet_name": "Products",
-        "generator": products_dummy,
+        "dummy": products.dummy,
+        "api": lambda: products.from_api(client),
     },
     "stock_on_hand": {
         "category": "inventory",

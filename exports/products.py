@@ -1,17 +1,57 @@
-from typing import List, Any, Tuple
-from . import ExportResult
+from typing import Any, Dict, List, Tuple
+from unleashed_client import UnleashedClient
+from exports.utils import parse_unleashed_dotnet_date
+
+ExportResult = Tuple[str, List[str], List[List[Any]]]
+
 
 def dummy() -> ExportResult:
-    return "Products", ["Product Code", "Product Name", "Category", "Price"], [
-        ["P001", "Espresso Beans", "Coffee", 120.00],
-        ["P002", "Milk Powder", "Consumables", 85.50],
+    return "Products", ["ProductCode", "ProductDescription", "Guid"], [
+        ["P001", "Espresso Beans", "00000000-0000-0000-0000-000000000001"],
+        ["P002", "Milk Powder", "00000000-0000-0000-0000-000000000002"],
     ]
 
-def from_api(client) -> ExportResult:
-    """
-    Placeholder for Unleashed API integration.
-    Tonight you’ll provide endpoint + required fields.
-    """
-    # Example idea (do not run yet):
-    # data = client.get("/Products", params={"pageSize": 200, "page": 1})
-    raise NotImplementedError("Products API export not implemented yet.")
+
+def from_api(client: UnleashedClient) -> ExportResult:
+    data: Dict[str, Any] = client.get("/Products")
+
+    headers = [
+        "ProductCode",
+        "ProductDescription",
+        "Barcode",
+        "IsObsolete",
+        "IsComponent",
+        "DefaultPurchasePrice",
+        "DefaultSellPrice",
+        "AverageLandCost",
+        "ProductGroup",
+        "UnitOfMeasure",
+        "Guid",
+        "LastModifiedOn",
+    ]
+
+    rows: List[List[Any]] = []
+
+    for p in data.get("Items", []):
+        group = p.get("ProductGroup")
+        group_name = group.get("GroupName") if isinstance(group, dict) else group
+
+        uom = p.get("UnitOfMeasure")
+        uom_name = uom.get("Name") if isinstance(uom, dict) else uom
+
+        rows.append([
+            p.get("ProductCode"),
+            p.get("ProductDescription"),
+            p.get("Barcode"),
+            p.get("IsObsolete"),
+            p.get("IsComponent"),
+            p.get("DefaultPurchasePrice"),
+            p.get("DefaultSellPrice"),
+            p.get("AverageLandCost"),
+            group_name,
+            uom_name,
+            p.get("Guid"),
+            parse_unleashed_dotnet_date(p.get("LastModifiedOn")),
+        ])
+
+    return "Products", headers, rows
