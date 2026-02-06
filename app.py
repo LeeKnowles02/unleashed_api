@@ -10,18 +10,18 @@ from typing import Any, Dict, Optional, List
 
 from config import Config
 from unleashed_client import UnleashedClient
-from exports import sales_orders, customers, suppliers, products
+from exports import (
+    sales_orders,
+    customers,
+    suppliers,
+    products,
+    warehouses,
+    stock_on_hand,
+)
 
-
-def stock_on_hand_dummy():
-    return (
-        "StockOnHand",
-        ["Product Code", "Warehouse", "Quantity"],
-        [
-            ["P001", "Main Warehouse", 340],
-            ["P002", "Main Warehouse", 120],
-        ],
-    )
+import exports.warehouses as wh
+print("WAREHOUSES IMPORTED FROM:", wh.__file__)
+print("WAREHOUSES ATTRS:", [a for a in dir(wh) if a in ("dummy", "from_api")])
 
 
 cfg = Config()
@@ -43,12 +43,19 @@ EXPORTS = {
         "dummy": products.dummy,
         "api": lambda: products.from_api(client),
     },
-    "stock_on_hand": {
+    "warehouses": {
         "category": "inventory",
-        "label": "Stock on Hand",
-        "description": "Inventory snapshot",
+        "label": "Warehouses",
+        "description": "Warehouse master data",
+        "sheet_name": "Warehouses",
+        "api": lambda: warehouses.from_api(client),
+    },
+    "stock_on_hand_api": {
+        "category": "inventory",
+        "label": "Stock On Hand (API)",
+        "description": "Inventory snapshot (by product/warehouse)",
         "sheet_name": "StockOnHand",
-        "generator": stock_on_hand_dummy,
+        "api": lambda: stock_on_hand.from_api(client),
     },
     "sales_orders": {
         "category": "sales",
@@ -235,4 +242,4 @@ def run_single():
 
 
 if __name__ == "__main__":
-    app.run(debug=True)
+    app.run(debug=True, use_reloader=False)
