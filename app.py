@@ -10,7 +10,7 @@ from typing import Any, Dict, Optional, List
 
 from config import Config
 from unleashed_client import UnleashedClient
-from exports import sales_orders, customers
+from exports import sales_orders, customers, suppliers
 
 
 def products_dummy():
@@ -75,6 +75,14 @@ EXPORTS = {
         "sheet_name": "Customers",
         "dummy": customers.dummy,
         "api": lambda: customers.from_api(client),
+    },
+    "suppliers": {
+        "category": "purchasing",
+        "label": "Suppliers",
+        "description": "Supplier master data",
+        "sheet_name": "Suppliers",
+        "dummy": suppliers.dummy,
+        "api": lambda: suppliers.from_api(client),
     },
 }
 
