@@ -19,6 +19,7 @@ from exports import (
     stock_on_hand,
     sales_shipments,
     credit_notes,
+    invoices,
 )
 
 cfg = Config()
@@ -39,6 +40,14 @@ EXPORTS = {
         "sheet_name": "Products",
         "dummy": products.dummy,
         "api": lambda: products.from_api(client),
+    },
+    "invoices": {
+        "category": "sales",
+        "label": "Invoices",
+        "description": "Revenue documents (header-only for now)",
+        "sheet_name": "Invoices",
+        "dummy": invoices.dummy,
+        "api": lambda: invoices.from_api(client),
     },
     "credit_notes": {
         "category": "sales",
