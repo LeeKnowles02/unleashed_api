@@ -15,6 +15,9 @@ class UnleashedClient:
     api_key: str
     client_type: str
     timeout_seconds: int = 30
+    
+    last_status_code: Optional[int] = None
+    last_url: Optional[str] = None
 
     def is_configured(self) -> bool:
         return bool(self.base_url and self.api_id and self.api_key and self.client_type)
@@ -50,5 +53,9 @@ class UnleashedClient:
             url = f"{url}?{query_string}"
 
         resp = requests.get(url, headers=self._headers(query_string), timeout=self.timeout_seconds)
+        
+        self.last_status_code = resp.status_code
+        self.last_url = resp.url
+        
         resp.raise_for_status()
         return resp.json()
