@@ -1,4 +1,5 @@
 from dotenv import load_dotenv
+from db import start_run, finish_run
 
 load_dotenv()
 
@@ -85,7 +86,7 @@ EXPORTS = {
         "description": "Transactional",
         "sheet_name": "SalesOrders",
         "dummy": sales_orders.dummy,
-        "api": lambda: sales_orders.from_api(client),
+        "api": lambda **kwargs: sales_orders.from_api(client, **kwargs),
     },
     "customers": {
         "category": "customers",
@@ -106,7 +107,70 @@ EXPORTS = {
 }
 
 
-def run_export(key: str):
+def build_workbook(selected_keys):
+    wb = Workbook()
+    wb.remove(wb.active)
+
+    run_id = None
+    if cfg.USE_UNLEASHED_API and client.is_configured():
+        try:
+            run_id = start_run(company_id="unleashed_client_1")
+        except Exception:
+            run_id = None
+
+    try:
+        for key in selected_keys:
+            if key not in EXPORTS:
+                continue
+
+            export = EXPORTS.get(key)
+
+            if not export:
+                continue
+
+            if "generator" in export:
+                sheet_name, headers, rows = export["generator"]()
+            else:
+                if not cfg.USE_UNLEASHED_API or not client.is_configured():
+                    sheet_name, headers, rows = export["dummy"]()
+                else:
+                    api_fn = export["api"]
+
+                    try:
+                        sheet_name, headers, rows = api_fn(
+                            run_id=run_id, company_id="unleashed_client_1"
+                        )
+                    except TypeError:
+                        sheet_name, headers, rows = api_fn()
+
+            ws = wb.create_sheet(title=sheet_name[:31])
+            ws.append(headers)
+            for r in rows:
+                ws.append(r)
+
+            for cell in ws[1]:
+                cell.font = cell.font.copy(bold=True)
+
+            for col_idx in range(1, len(headers) + 1):
+                col_letter = get_column_letter(col_idx)
+                max_len = 0
+                for cell in ws[col_letter]:
+                    if cell.value is not None:
+                        max_len = max(max_len, len(str(cell.value)))
+                ws.column_dimensions[col_letter].width = min(max_len + 2, 40)
+
+        if run_id:
+            finish_run(run_id, "SUCCESS")
+
+        return wb
+
+    except Exception as e:
+        if run_id:
+            finish_run(run_id, "FAILED", notes=str(e))
+        raise
+
+
+def run_export(key: str, **kwargs):
     export = EXPORTS.get(key)
     if not export:
         raise KeyError(key)
@@ -117,36 +181,7 @@ def run_export(key: str):
     if not cfg.USE_UNLEASHED_API or not client.is_configured():
         return export["dummy"]()
 
-    return export["api"]()
-
-
-def build_workbook(selected_keys):
-    wb = Workbook()
-    wb.remove(wb.active)
-
-    for key in selected_keys:
-        if key not in EXPORTS:
-            continue
-
-        sheet_name, headers, rows = run_export(key)
-
-        ws = wb.create_sheet(title=sheet_name[:31])
-        ws.append(headers)
-        for r in rows:
-            ws.append(r)
-
-        for cell in ws[1]:
-            cell.font = cell.font.copy(bold=True)
-
-        for col_idx in range(1, len(headers) + 1):
-            col_letter = get_column_letter(col_idx)
-            max_len = 0
-            for cell in ws[col_letter]:
-                if cell.value is not None:
-                    max_len = max(max_len, len(str(cell.value)))
-            ws.column_dimensions[col_letter].width = min(max_len + 2, 40)
-
-    return wb
+    return export["api"](**kwargs)
 
 
 app = Flask(__name__, template_folder="templates", static_folder="static")
