@@ -45,7 +45,7 @@ class UnleashedClient:
 
         params = params or {}
 
-        # stable ordering for signature
+        # stable ordering for signature showing comments
         query_string = urlencode(sorted(params.items()), doseq=True)
 
         url = self.base_url.rstrip("/") + "/" + path.lstrip("/")
