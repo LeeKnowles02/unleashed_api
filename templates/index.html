@@ -1,13 +1,13 @@
 {% extends 'layout.html' %}
 {% block title %}
-  Dashboard | Unleashed Runner
+  {{ (page_title or "Dashboard") }} | Unleashed Runner
 {% endblock %}
 
 {% block content %}
   <div class="space-between">
     <div class="stack-6">
-      <h1 class="h1">Dashboard</h1>
-      <div class="muted">Run exports and download Excel-ready files.</div>
+      <h1 class="h1">{{ page_title or "Dashboard" }}</h1>
+      <div class="muted">{{ page_subtitle or "Run exports and download Excel-ready files." }}</div>
     </div>
 
     <div class="row">
@@ -25,7 +25,6 @@
     </div>
 
     <div class="card-body">
-      <!-- BULK FORM -->
       <form id="bulkRunForm" method="post" action="/run-selected">
         <div class="table-wrap">
           <table>
@@ -40,56 +39,37 @@
             </thead>
 
             <tbody>
+              {% for e in exports %}
               <tr>
                 <td class="td-tight">
-                  <input type="checkbox" name="exports" value="products" />
+                  <input type="checkbox" name="exports" value="{{ e.key }}" />
                 </td>
-                <td>
-                  <strong>Products</strong>
-                  <div class="muted">Master data</div>
-                </td>
-                <td class="muted">—</td>
-                <td>
-                  <span class="pill pill-neutral">Idle</span>
-                </td>
-                <td class="td-action">
-                  <button class="btn btn-secondary btn-sm" type="submit" formaction="/run-single" formmethod="post" name="export" value="products">Run</button>
-                </td>
-              </tr>
 
-              <tr>
-                <td class="td-tight">
-                  <input type="checkbox" name="exports" value="stock_on_hand" />
-                </td>
                 <td>
-                  <strong>Stock on Hand</strong>
-                  <div class="muted">Inventory snapshot</div>
+                  <strong>{{ e.label }}</strong>
+                  {% if e.description %}
+                    <div class="muted">{{ e.description }}</div>
+                  {% endif %}
                 </td>
-                <td class="muted">2026-01-23 08:10</td>
-                <td>
-                  <span class="pill pill-success">Success</span>
-                </td>
-                <td class="td-action">
-                  <button class="btn btn-secondary btn-sm" type="submit" formaction="/run-single" formmethod="post" name="export" value="stock_on_hand">Run</button>
-                </td>
-              </tr>
 
-              <tr>
-                <td class="td-tight">
-                  <input type="checkbox" name="exports" value="sales_orders" />
-                </td>
+                <td class="muted">{{ e.last_run }}</td>
+
                 <td>
-                  <strong>Sales Orders</strong>
-                  <div class="muted">Transactional</div>
+                  <span class="pill {{ e.status_class }}">{{ e.status }}</span>
                 </td>
-                <td class="muted">2026-01-23 08:05</td>
-                <td>
-                  <span class="pill pill-danger">Failed</span>
-                </td>
+
                 <td class="td-action">
-                  <button class="btn btn-secondary btn-sm" type="submit" formaction="/run-single" formmethod="post" name="export" value="sales_orders">Run</button>
+                  <button
+                    class="btn btn-secondary btn-sm"
+                    type="submit"
+                    formaction="/run-single"
+                    formmethod="post"
+                    name="export"
+                    value="{{ e.key }}"
+                  >Run</button>
                 </td>
               </tr>
+              {% endfor %}
             </tbody>
           </table>
         </div>

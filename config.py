@@ -4,6 +4,7 @@ import os
 class Config:
     UNLEASHED_API_ID = os.getenv("UNLEASHED_API_ID", "")
     UNLEASHED_API_KEY = os.getenv("UNLEASHED_API_KEY", "")
+    UNLEASHED_CLIENT_TYPE = os.getenv("UNLEASHED_CLIENT_TYPE", "")
     UNLEASHED_BASE_URL = os.getenv(
         "UNLEASHED_BASE_URL",
         "https://api.unleashedsoftware.com"
