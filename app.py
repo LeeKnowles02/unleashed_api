@@ -280,6 +280,11 @@ def ui_showcase():
     return render_template("ui_showcase.html", active_page="ui")
 
 
+@app.route("/settings")
+def settings():
+    return render_template("settings.html", active_page="settings")
+
+
 @app.route("/api-status")
 def api_status():
     return {

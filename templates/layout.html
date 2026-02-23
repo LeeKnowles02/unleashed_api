@@ -1,7 +1,16 @@
 <!DOCTYPE html>
 <html lang="en" data-theme="light">
+  <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <script>
+      (function(){
+        var k = 'unleashed-theme', v;
+        try { v = localStorage.getItem(k); } catch (e) {}
+        if (v === 'dark') document.documentElement.setAttribute('data-theme', 'dark');
+        else if (v === 'system' && window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) document.documentElement.setAttribute('data-theme', 'dark');
+      })();
+    </script>
     <title>
       {% block title %}
         Unleashed Runner
@@ -57,6 +66,35 @@
       </main>
     </div>
 
+    <script>
+      (function() {
+        var STORAGE_KEY = 'unleashed-theme';
+        function getStored() { try { return localStorage.getItem(STORAGE_KEY); } catch (e) { return null; } }
+        function setStored(v) { try { localStorage.setItem(STORAGE_KEY, v); } catch (e) {} }
+        function prefersDark() { return window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches; }
+        function applyTheme(value) {
+          var resolved = value === 'system' ? (prefersDark() ? 'dark' : 'light') : value;
+          document.documentElement.setAttribute('data-theme', resolved);
+          document.querySelectorAll('.theme-btn').forEach(function(btn) {
+            btn.classList.toggle('active', btn.dataset.theme === value);
+          });
+        }
+        var initial = getStored() || 'light';
+        applyTheme(initial);
+        window.addEventListener('DOMContentLoaded', function() {
+          document.querySelectorAll('.theme-btn').forEach(function(btn) {
+            btn.addEventListener('click', function() {
+              var v = btn.dataset.theme;
+              setStored(v);
+              applyTheme(v);
+            });
+          });
+          if (window.matchMedia) window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', function() {
+            if (getStored() === 'system') applyTheme('system');
+          });
+        });
+      })();
+    </script>
     {% block scripts %}
     {% endblock %}
   </body>
