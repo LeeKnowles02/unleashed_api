@@ -5,6 +5,7 @@ from exports.utils import parse_unleashed_dotnet_date
 ExportResult = Tuple[str, List[str], List[List[Any]]]
 
 
+
 def dummy() -> ExportResult:
     return "CreditNotes", ["CreditNoteNumber", "CustomerName", "CreditNoteDate", "Total", "Guid"], [
         ["CN-1001", "Cafe Nero", None, 250.00, "00000000-0000-0000-0000-000000000001"],

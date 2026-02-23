@@ -4,76 +4,102 @@
 {% endblock %}
 
 {% block content %}
-  <div class="space-between">
-    <div class="stack-6">
-      <h1 class="h1">{{ page_title or "Dashboard" }}</h1>
-      <div class="muted">{{ page_subtitle or "Run exports and download Excel-ready files." }}</div>
+  <div class="stack-24">
+    <div class="space-between">
+      <div class="stack-6">
+        <h1 class="h1">{{ page_title or "Dashboard" }}</h1>
+        <div class="muted">{{ page_subtitle or "Run exports and download Excel-ready files." }}</div>
+      </div>
+
+      <div class="row">
+        <button class="btn btn-secondary btn-md" type="button">Settings</button>
+        <button class="btn btn-primary btn-md" type="submit" form="bulkRunForm">Run Selected</button>
+      </div>
     </div>
 
-    <div class="row">
-      <button class="btn btn-secondary btn-md" type="button">Settings</button>
-      <button class="btn btn-primary btn-md" type="submit" form="bulkRunForm">Run Selected</button>
-    </div>
-  </div>
+    <div class="card">
+      <div class="card-header">
+        <div class="space-between">
+          <div class="stack-6">
+            <h2 class="h2">Exports</h2>
+            <div class="muted">Select one or more exports to run and download.</div>
+          </div>
 
-  <hr class="hr" />
-
-  <div class="card">
-    <div class="card-header">
-      <h2 class="h2">Exports</h2>
-      <div class="muted">Select one or more exports to run.</div>
-    </div>
-
-    <div class="card-body">
-      <form id="bulkRunForm" method="post" action="/run-selected">
-        <div class="table-wrap">
-          <table>
-            <thead>
-              <tr>
-                <th class="th-tight"></th>
-                <th>Export</th>
-                <th>Last Run</th>
-                <th>Status</th>
-                <th class="th-action">Action</th>
-              </tr>
-            </thead>
-
-            <tbody>
-              {% for e in exports %}
-              <tr>
-                <td class="td-tight">
-                  <input type="checkbox" name="exports" value="{{ e.key }}" />
-                </td>
-
-                <td>
-                  <strong>{{ e.label }}</strong>
-                  {% if e.description %}
-                    <div class="muted">{{ e.description }}</div>
-                  {% endif %}
-                </td>
-
-                <td class="muted">{{ e.last_run }}</td>
-
-                <td>
-                  <span class="pill {{ e.status_class }}">{{ e.status }}</span>
-                </td>
-
-                <td class="td-action">
-                  <button
-                    class="btn btn-secondary btn-sm"
-                    type="submit"
-                    formaction="/run-single"
-                    formmethod="post"
-                    name="export"
-                    value="{{ e.key }}"
-                  >Run</button>
-                </td>
-              </tr>
-              {% endfor %}
-            </tbody>
-          </table>
+          <div class="stack-6" style="text-align: right;">
+            <div class="muted">Total exports</div>
+            <div class="h3">{{ exports|length }}</div>
+          </div>
         </div>
-      </form>
+      </div>
+
+      <div class="card-body">
+        <div class="space-between" style="margin-bottom: 16px;">
+          <div class="muted">
+            Showing {{ exports|length }} export{{ exports|length != 1 and "s" or "" }}.
+          </div>
+
+          <div class="row" style="gap: 12px;">
+            <input class="input" placeholder="Search exports…" name="search" style="min-width: 220px;" />
+            <select class="select" name="status_filter">
+              <option value="">All statuses</option>
+              <option value="success">Successful</option>
+              <option value="running">Running</option>
+              <option value="failed">Failed</option>
+              <option value="idle">Idle</option>
+            </select>
+          </div>
+        </div>
+
+        <form id="bulkRunForm" method="post" action="/run-selected">
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th class="th-tight"></th>
+                  <th>Export</th>
+                  <th>Last Run</th>
+                  <th>Status</th>
+                  <th class="th-action">Action</th>
+                </tr>
+              </thead>
+
+              <tbody>
+                {% for e in exports %}
+                <tr>
+                  <td class="td-tight">
+                    <input type="checkbox" name="exports" value="{{ e.key }}" />
+                  </td>
+
+                  <td>
+                    <strong>{{ e.label }}</strong>
+                    {% if e.description %}
+                      <div class="muted">{{ e.description }}</div>
+                    {% endif %}
+                  </td>
+
+                  <td class="muted">{{ e.last_run }}</td>
+
+                  <td>
+                    <span class="pill {{ e.status_class }}">{{ e.status }}</span>
+                  </td>
+
+                  <td class="td-action">
+                    <button
+                      class="btn btn-secondary btn-sm"
+                      type="submit"
+                      formaction="/run-single"
+                      formmethod="post"
+                      name="export"
+                      value="{{ e.key }}"
+                    >Run</button>
+                  </td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        </form>
+      </div>
     </div>
   </div>
 {% endblock %}
