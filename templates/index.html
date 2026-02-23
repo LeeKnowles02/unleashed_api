@@ -8,48 +8,120 @@
     <div class="space-between">
       <div class="stack-6">
         <h1 class="h1">{{ page_title or "Dashboard" }}</h1>
-        <div class="muted">{{ page_subtitle or "Run exports and download Excel-ready files." }}</div>
+        <div class="muted">{{ page_subtitle or "Schedule and run Unleashed reports." }}</div>
       </div>
-
+      {% if reports is defined %}
+      <a href="/exports/sales" class="btn btn-secondary btn-md">All exports by category</a>
+      {% else %}
       <div class="row">
         <button class="btn btn-secondary btn-md" type="button">Settings</button>
         <button class="btn btn-primary btn-md" type="submit" form="bulkRunForm">Run Selected</button>
       </div>
+      {% endif %}
     </div>
 
+    {% if reports is defined %}
+    <!-- Dashboard: Scheduler -->
     <div class="card">
       <div class="card-header">
-        <div class="space-between">
-          <div class="stack-6">
-            <h2 class="h2">Exports</h2>
-            <div class="muted">Select one or more exports to run and download.</div>
-          </div>
-
-          <div class="stack-6" style="text-align: right;">
-            <div class="muted">Total exports</div>
-            <div class="h3">{{ exports|length }}</div>
-          </div>
-        </div>
+        <h2 class="h2">Schedule a report</h2>
+        <div class="muted">Choose a report and how often to run it (e.g. every week).</div>
       </div>
-
       <div class="card-body">
-        <div class="space-between" style="margin-bottom: 16px;">
-          <div class="muted">
-            Showing {{ exports|length }} export{{ exports|length != 1 and "s" or "" }}.
-          </div>
-
-          <div class="row" style="gap: 12px;">
-            <input class="input" placeholder="Search exports…" name="search" style="min-width: 220px;" />
-            <select class="select" name="status_filter">
-              <option value="">All statuses</option>
-              <option value="success">Successful</option>
-              <option value="running">Running</option>
-              <option value="failed">Failed</option>
-              <option value="idle">Idle</option>
+        <form method="post" action="/schedule/add" class="row" style="flex-wrap: wrap; gap: 12px; align-items: flex-end;">
+          <div class="stack-6" style="min-width: 200px;">
+            <label class="muted" style="font-size: 12px; font-weight: 600;">Report</label>
+            <select class="select" name="report_key" required>
+              <option value="">Select a report…</option>
+              {% for r in reports %}
+              <option value="{{ r.key }}">{{ r.label }}</option>
+              {% endfor %}
             </select>
           </div>
-        </div>
+          <div class="stack-6" style="min-width: 160px;">
+            <label class="muted" style="font-size: 12px; font-weight: 600;">Frequency</label>
+            <select class="select" name="frequency">
+              <option value="daily">Daily</option>
+              <option value="weekly" selected>Every week</option>
+              <option value="monthly">Monthly</option>
+            </select>
+          </div>
+          <button type="submit" class="btn btn-primary btn-md">Add schedule</button>
+        </form>
+      </div>
+    </div>
 
+    <!-- Scheduled reports -->
+    <div class="card">
+      <div class="card-header">
+        <h2 class="h2">Scheduled reports</h2>
+        <div class="muted">Reports that are set to run on a schedule.</div>
+      </div>
+      <div class="card-body">
+        {% if schedules %}
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Report</th>
+                <th>Frequency</th>
+                <th>Scheduled</th>
+                <th class="th-action">Action</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for s in schedules %}
+              <tr>
+                <td><strong>{{ s.report_label }}</strong></td>
+                <td class="muted">{{ s.frequency }}</td>
+                <td class="muted">{{ s.created_at_display }}</td>
+                <td class="td-action">
+                  <form method="post" action="/schedule/{{ s.id }}/delete" style="display: inline;">
+                    <button type="submit" class="btn btn-ghost btn-sm">Remove</button>
+                  </form>
+                </td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+        {% else %}
+        <div class="muted">No scheduled reports yet. Add one above.</div>
+        {% endif %}
+      </div>
+    </div>
+
+    <!-- Available reports (placeholders: will run via Azure SQL) -->
+    <div class="card">
+      <div class="card-header">
+        <h2 class="h2">Reports</h2>
+        <div class="muted">Reports run from Azure SQL. Run buttons are placeholders for now.</div>
+      </div>
+      <div class="card-body">
+        <div class="report-grid">
+          {% for r in reports %}
+          <div class="report-card">
+            <div class="stack-6">
+              <strong class="h3">{{ r.label }}</strong>
+              {% if r.description %}
+              <div class="muted">{{ r.description }}</div>
+              {% endif %}
+            </div>
+            <button type="button" class="btn btn-secondary btn-sm" disabled style="margin-top: 12px;">Run (coming soon)</button>
+          </div>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+    {% else %}
+    <!-- Category page: Exports table -->
+    <hr class="hr" />
+    <div class="card">
+      <div class="card-header">
+        <h2 class="h2">Exports</h2>
+        <div class="muted">Select one or more exports to run.</div>
+      </div>
+      <div class="card-body">
         <form id="bulkRunForm" method="post" action="/run-selected">
           <div class="table-wrap">
             <table>
@@ -62,36 +134,18 @@
                   <th class="th-action">Action</th>
                 </tr>
               </thead>
-
               <tbody>
                 {% for e in exports %}
                 <tr>
-                  <td class="td-tight">
-                    <input type="checkbox" name="exports" value="{{ e.key }}" />
-                  </td>
-
+                  <td class="td-tight"><input type="checkbox" name="exports" value="{{ e.key }}" /></td>
                   <td>
                     <strong>{{ e.label }}</strong>
-                    {% if e.description %}
-                      <div class="muted">{{ e.description }}</div>
-                    {% endif %}
+                    {% if e.description %}<div class="muted">{{ e.description }}</div>{% endif %}
                   </td>
-
                   <td class="muted">{{ e.last_run }}</td>
-
-                  <td>
-                    <span class="pill {{ e.status_class }}">{{ e.status }}</span>
-                  </td>
-
+                  <td><span class="pill {{ e.status_class }}">{{ e.status }}</span></td>
                   <td class="td-action">
-                    <button
-                      class="btn btn-secondary btn-sm"
-                      type="submit"
-                      formaction="/run-single"
-                      formmethod="post"
-                      name="export"
-                      value="{{ e.key }}"
-                    >Run</button>
+                    <button class="btn btn-secondary btn-sm" type="submit" formaction="/run-single" formmethod="post" name="export" value="{{ e.key }}">Run</button>
                   </td>
                 </tr>
                 {% endfor %}
@@ -101,5 +155,23 @@
         </form>
       </div>
     </div>
+    {% endif %}
   </div>
+
+  <style>
+    .report-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      gap: 16px;
+    }
+    .report-card {
+      padding: 16px;
+      border: 1px solid var(--border);
+      border-radius: var(--radius-md);
+      background: var(--surface);
+      display: flex;
+      flex-direction: column;
+    }
+    .report-card .muted { font-size: 13px; }
+  </style>
 {% endblock %}
