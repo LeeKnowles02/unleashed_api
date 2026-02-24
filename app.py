@@ -1,9 +1,10 @@
 from dotenv import load_dotenv
 from db import start_run, finish_run
+from schedules import add_schedule, delete_schedule, list_schedules
 
 load_dotenv()
 
-from flask import Flask, render_template, request, Response
+from flask import Flask, redirect, render_template, request, Response
 from openpyxl import Workbook
 from openpyxl.utils import get_column_letter
 import io
@@ -106,6 +107,15 @@ EXPORTS = {
     },
 }
 
+# Placeholder reports for the dashboard (run via Azure SQL later; Run buttons are placeholders)
+DASHBOARD_REPORTS = [
+    {"key": "sales_summary", "label": "Sales Summary", "description": "Summary of sales and revenue from Unleashed data."},
+    {"key": "inventory_report", "label": "Inventory Report", "description": "Stock levels and inventory position."},
+    {"key": "customer_report", "label": "Customer Report", "description": "Customer list and sales dimensions."},
+    {"key": "product_report", "label": "Product Report", "description": "Product master and cost foundation."},
+    {"key": "purchasing_report", "label": "Purchasing Report", "description": "Suppliers and purchasing data."},
+]
+
 
 def build_workbook(selected_keys):
     wb = Workbook()
@@ -206,14 +216,34 @@ def build_exports_list(category: Optional[str] = None):
     return exports_list
 
 
+def build_reports_list() -> List[Dict[str, Any]]:
+    """Placeholder reports for dashboard and scheduler."""
+    return list(DASHBOARD_REPORTS)
+
+
+def get_report_label(key: str) -> str:
+    for r in DASHBOARD_REPORTS:
+        if r["key"] == key:
+            return r["label"]
+    return key
+
+
 @app.route("/")
 def index():
+    reports = build_reports_list()
+    try:
+        schedules = list_schedules()
+    except Exception:
+        schedules = []
+    for s in schedules:
+        s["report_label"] = get_report_label(s["report_key"])
     return render_template(
         "index.html",
         active_page="dashboard",
         page_title="Dashboard",
-        page_subtitle="Run exports and download Excel-ready files.",
-        exports=build_exports_list(),
+        page_subtitle="Schedule and run Unleashed reports.",
+        reports=reports,
+        schedules=schedules,
     )
 
 
@@ -248,6 +278,11 @@ def exports_by_category(category: str):
 @app.route("/ui")
 def ui_showcase():
     return render_template("ui_showcase.html", active_page="ui")
+
+
+@app.route("/settings")
+def settings():
+    return render_template("settings.html", active_page="settings")
 
 
 @app.route("/api-status")
@@ -296,6 +331,23 @@ def run_single():
         mimetype="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
         headers={"Content-Disposition": f"attachment; filename={key}.xlsx"},
     )
+
+
+@app.route("/schedule/add", methods=["POST"])
+def schedule_add():
+    report_key = request.form.get("report_key")
+    frequency = request.form.get("frequency", "weekly").strip() or "weekly"
+    valid_keys = {r["key"] for r in DASHBOARD_REPORTS}
+    if not report_key or report_key not in valid_keys:
+        return "Invalid report", 400
+    add_schedule(report_key, frequency)
+    return redirect("/")
+
+
+@app.route("/schedule/<schedule_id>/delete", methods=["POST"])
+def schedule_delete(schedule_id: str):
+    delete_schedule(schedule_id)
+    return redirect("/")
 
 
 if __name__ == "__main__":
