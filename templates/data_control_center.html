@@ -1,0 +1,155 @@
+{% extends 'layout.html' %}
+{% block title %}
+  Data Control Center | Unleashed Runner
+{% endblock %}
+
+{% block content %}
+  <div class="stack-24">
+    <div class="stack-6">
+      <h1 class="h1">Data Control Center</h1>
+      <div class="muted">Run database connectivity checks, safe endpoint test loads, incremental validation, and sign-off review.</div>
+    </div>
+
+    {% if result %}
+    <div class="card">
+      <div class="card-header">
+        <h2 class="h2">Latest Action Result</h2>
+      </div>
+      <div class="card-body">
+        <div class="row" style="margin-bottom: 10px;">
+          <span class="pill {% if result.status in ['PASS', 'SUCCESS', 'PASS_WITH_WARNINGS'] %}pill-success{% else %}pill-danger{% endif %}">
+            {{ result.status or 'UNKNOWN' }}
+          </span>
+        </div>
+        {% if result.message %}<div><strong>Message:</strong> {{ result.message }}</div>{% endif %}
+        {% if result.summary %}<div><strong>Summary:</strong> {{ result.summary }}</div>{% endif %}
+        {% if result.run_ref %}<div><strong>RunRef:</strong> {{ result.run_ref }}</div>{% endif %}
+        {% if result.assessment_ref %}<div><strong>AssessmentRef:</strong> {{ result.assessment_ref }}</div>{% endif %}
+        {% if result.records_processed is not none %}<div><strong>Records processed:</strong> {{ result.records_processed }}</div>{% endif %}
+        {% if result.rows_written is not none %}<div><strong>Rows written:</strong> {{ result.rows_written }}</div>{% endif %}
+        {% if result.rows_deleted is not none %}<div><strong>Rows deleted:</strong> {{ result.rows_deleted }}</div>{% endif %}
+        {% if result.sign_off_status %}<div><strong>Sign-off status:</strong> {{ result.sign_off_status }}</div>{% endif %}
+        {% if result.error %}<div><strong>Error:</strong> {{ result.error }}</div>{% endif %}
+      </div>
+    </div>
+    {% endif %}
+
+    <div class="card">
+      <div class="card-header">
+        <h2 class="h2">Database Connection Test</h2>
+        <div class="muted">Creates/uses <code>unleashed.ConnectionTest</code> and writes 10 hardcoded rows.</div>
+      </div>
+      <div class="card-body">
+        <form method="post" class="row">
+          <input type="hidden" name="endpoint_name" value="{{ endpoint_name }}" />
+          <button class="btn btn-primary btn-md" type="submit" name="action" value="test_db_connection">Test Database Connection</button>
+          <button class="btn btn-secondary btn-md" type="submit" name="action" value="clear_connection_test_data">Clear Connection Test Data</button>
+        </form>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-header">
+        <h2 class="h2">Endpoint DB Test</h2>
+        <div class="muted">Runs a sample endpoint test and writes first 10 records as TEST rows.</div>
+      </div>
+      <div class="card-body">
+        <form method="post" class="row" style="align-items: flex-end;">
+          <div class="stack-6" style="min-width: 240px;">
+            <label class="muted" style="font-size: 12px; font-weight: 600;">Select Endpoint</label>
+            <select class="select" name="endpoint_name">
+              {% for ep in endpoints %}
+              <option value="{{ ep }}" {% if ep == endpoint_name %}selected{% endif %}>{{ ep }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <button class="btn btn-primary btn-md" type="submit" name="action" value="run_sample_db_test">Run Sample DB Test</button>
+          <button class="btn btn-secondary btn-md" type="submit" name="action" value="verify_last_run">Verify Last Run in DB</button>
+        </form>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-header">
+        <h2 class="h2">Incremental Validation Test</h2>
+        <div class="muted">Runs 20 vs (10 + 10) validation for SalesOrders and records formal assessment.</div>
+      </div>
+      <div class="card-body">
+        <form method="post" class="row">
+          <input type="hidden" name="endpoint_name" value="{{ endpoint_name }}" />
+          <button class="btn btn-primary btn-md" type="submit" name="action" value="run_incremental_test">Run Incremental Test (20 vs 10 + 10)</button>
+        </form>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-header">
+        <h2 class="h2">Clear TEST Data</h2>
+        <div class="muted">Clear TEST rows or reset endpoint table for a production reset.</div>
+      </div>
+      <div class="card-body stack-14">
+        <form method="post" class="row">
+          <input type="hidden" name="endpoint_name" value="{{ endpoint_name }}" />
+          <button class="btn btn-secondary btn-md" type="submit" name="action" value="clear_test_rows">Clear TEST Rows</button>
+        </form>
+        <form method="post" class="row" style="align-items: flex-end;">
+          <input type="hidden" name="endpoint_name" value="{{ endpoint_name }}" />
+          <div class="stack-6" style="min-width: 260px;">
+            <label class="muted" style="font-size: 12px; font-weight: 600;">Type confirmation</label>
+            <input class="input" name="confirm_clear_endpoint" placeholder="YES_CLEAR" />
+          </div>
+          <button class="btn btn-secondary btn-md" type="submit" name="action" value="clear_endpoint_reset">Clear Endpoint for Production Reset</button>
+        </form>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-header">
+        <h2 class="h2">Run Status / Sign-off Summary</h2>
+      </div>
+      <div class="card-body stack-10">
+        <div><strong>Last RunRef:</strong> {{ summary.LastRunRef or '—' }}</div>
+        <div><strong>Last status:</strong> {{ summary.LastStatus or '—' }}</div>
+        <div><strong>Last assessment:</strong> {{ summary.LastAssessmentStatus or '—' }}</div>
+        <div><strong>Sign-off status:</strong> {{ summary.LastSignOffStatus or '—' }}</div>
+        <div><strong>Last checkpoint:</strong> {{ summary.LastCheckpoint or '—' }}</div>
+        <div><strong>Last row count:</strong> {{ summary.LastRowCount if summary.LastRowCount is not none else '—' }}</div>
+
+        <div class="table-wrap" style="margin-top: 10px;">
+          <table>
+            <thead>
+              <tr>
+                <th>RunRef</th>
+                <th>Mode</th>
+                <th>Status</th>
+                <th>Fetched</th>
+                <th>Written</th>
+                <th>Deleted</th>
+                <th>Finished</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% if summary.RecentRuns %}
+                {% for r in summary.RecentRuns %}
+                <tr>
+                  <td class="muted">{{ r[0] }}</td>
+                  <td>{{ r[1] }}</td>
+                  <td>{{ r[2] }}</td>
+                  <td>{{ r[3] if r[3] is not none else '—' }}</td>
+                  <td>{{ r[4] if r[4] is not none else '—' }}</td>
+                  <td>{{ r[5] if r[5] is not none else '—' }}</td>
+                  <td class="muted">{{ r[6] if r[6] else '—' }}</td>
+                </tr>
+                {% endfor %}
+              {% else %}
+                <tr>
+                  <td colspan="7" class="muted">No run log data yet.</td>
+                </tr>
+              {% endif %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+{% endblock %}
