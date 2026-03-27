@@ -8,18 +8,26 @@ from flask import Flask, redirect, render_template, request, Response
 from openpyxl import Workbook
 from openpyxl.utils import get_column_letter
 import io
+import os
+import uuid
+from datetime import datetime
 from typing import Any, Dict, Optional, List
 
 from config import Config
 from db import get_conn
-from unleashed_db import SetupRequiredError
+from unleashed_db import (
+    ENDPOINT_TABLES,
+    SetupRequiredError,
+    log_run,
+    update_endpoint_control,
+    write_endpoint_rows,
+)
 from unleashed_client import UnleashedClient
 from unleashed_test import (
     clear_connection_test,
     clear_endpoint_for_production_reset,
     clear_test_rows,
     run_connection_test,
-    run_incremental_validation_test,
     run_sample_db_test,
 )
 from exports import (
@@ -138,6 +146,8 @@ def build_workbook(selected_keys):
         except Exception:
             run_id = None
 
+    workbook_batch_ref = f"{datetime.utcnow().strftime('%Y%m%d%H%M%S')}_{uuid.uuid4().hex[:8]}"
+
     try:
         for key in selected_keys:
             if key not in EXPORTS:
@@ -148,12 +158,14 @@ def build_workbook(selected_keys):
             if not export:
                 continue
 
+            used_real_api = False
             if "generator" in export:
                 sheet_name, headers, rows = export["generator"]()
             else:
                 if not cfg.USE_UNLEASHED_API or not client.is_configured():
                     sheet_name, headers, rows = export["dummy"]()
                 else:
+                    used_real_api = True
                     api_fn = export["api"]
 
                     try:
@@ -178,6 +190,72 @@ def build_workbook(selected_keys):
                     if cell.value is not None:
                         max_len = max(max_len, len(str(cell.value)))
                 ws.column_dimensions[col_letter].width = min(max_len + 2, 40)
+
+            if used_real_api and rows and sheet_name in ENDPOINT_TABLES:
+                run_ref = f"FULL_{workbook_batch_ref}_{sheet_name}"
+                started = datetime.utcnow()
+                try:
+                    write_result = write_endpoint_rows(
+                        endpoint_name=sheet_name,
+                        headers=headers,
+                        rows=rows,
+                        run_type="FULL",
+                        run_ref=run_ref,
+                    )
+                    finished = datetime.utcnow()
+                    n_written = write_result["rows_written"]
+                    log_run(
+                        {
+                            "RunRef": run_ref,
+                            "EndpointName": sheet_name,
+                            "RunType": "FULL",
+                            "RunMode": "excel_export_sync",
+                            "Status": "PASS",
+                            "StartedAt": started,
+                            "FinishedAt": finished,
+                            "DurationSeconds": int((finished - started).total_seconds()),
+                            "RowsFetched": len(rows),
+                            "RowsWritten": n_written,
+                            "TargetTable": f"unleashed.{sheet_name}",
+                            "Message": "Synced API export to Azure SQL.",
+                            "TriggerSource": "excel_export",
+                            "TriggeredBy": "ui",
+                            "Environment": os.getenv("APP_ENV", "local"),
+                        }
+                    )
+                    update_endpoint_control(
+                        sheet_name,
+                        {
+                            "LastFullRunRef": run_ref,
+                            "LastFullRunAt": finished,
+                            "LastRowCount": n_written,
+                            "LastStatus": "PASS",
+                            "NextAction": "Data available for reporting",
+                        },
+                    )
+                except Exception as db_exc:
+                    finished = datetime.utcnow()
+                    log_run(
+                        {
+                            "RunRef": run_ref,
+                            "EndpointName": sheet_name,
+                            "RunType": "FULL",
+                            "RunMode": "excel_export_sync",
+                            "Status": "FAIL",
+                            "StartedAt": started,
+                            "FinishedAt": finished,
+                            "DurationSeconds": int((finished - started).total_seconds()),
+                            "RowsFetched": len(rows),
+                            "RowsWritten": 0,
+                            "TargetTable": f"unleashed.{sheet_name}",
+                            "Message": "Failed to sync export to Azure SQL.",
+                            "ErrorMessage": str(db_exc),
+                            "TriggerSource": "excel_export",
+                            "TriggeredBy": "ui",
+                            "Environment": os.getenv("APP_ENV", "local"),
+                        }
+                    )
+                    raise
 
         if run_id:
             finish_run(run_id, "SUCCESS")
@@ -311,7 +389,7 @@ def build_control_summary(endpoint_name: str = "SalesOrders") -> Dict[str, Any]:
             cur.execute(
                 """
                 SELECT TOP 1
-                    [LastTestRunRef],
+                    COALESCE([LastFullRunRef], [LastTestRunRef]),
                     [LastStatus],
                     [LastAssessmentStatus],
                     [LastSignOffStatus],
@@ -357,7 +435,7 @@ def verify_last_run_in_db(endpoint_name: str = "SalesOrders") -> Dict[str, Any]:
         cur.execute(
             """
             SELECT TOP 1
-                [RunRef], [Status], [RowsFetched], [RowsWritten], [RowsDeleted], [RunMode], [ErrorMessage], [FinishedAt]
+                [RunRef], [Status], [RowsFetched], [RowsWritten], [RowsDeleted], [RunMode], [ErrorMessage], [FinishedAt], [RunType]
             FROM unleashed.RunLog
             WHERE [EndpointName] = ?
             ORDER BY [CreatedAt] DESC
@@ -377,15 +455,17 @@ def verify_last_run_in_db(endpoint_name: str = "SalesOrders") -> Dict[str, Any]:
         logged_rows_written = row[3] if row[3] is not None else 0
         run_mode = row[5]
         error_message = row[6]
+        run_type_expected = row[8] or "TEST"
 
         cur.execute(
             f"""
             SELECT COUNT(*)
             FROM {table_name}
-            WHERE [RunRef] = ? AND [EndpointName] = ? AND [RunType] = 'TEST'
+            WHERE [RunRef] = ? AND [EndpointName] = ? AND [RunType] = ?
             """,
             run_ref,
             endpoint_name,
+            run_type_expected,
         )
         actual_rows = cur.fetchone()[0]
         verified = (run_status == "PASS") and (actual_rows == logged_rows_written)
@@ -425,8 +505,6 @@ def data_control_center():
                 result = clear_connection_test(triggered_by="ui")
             elif action == "run_sample_db_test":
                 result = run_sample_db_test(endpoint_name=endpoint_name, triggered_by="ui")
-            elif action == "run_incremental_test":
-                result = run_incremental_validation_test(endpoint_name=endpoint_name, triggered_by="ui")
             elif action == "clear_test_rows":
                 result = clear_test_rows(endpoint_name=endpoint_name, triggered_by="ui")
             elif action == "clear_endpoint_reset":

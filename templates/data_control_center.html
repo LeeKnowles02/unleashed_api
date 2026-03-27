@@ -7,7 +7,7 @@
   <div class="stack-24">
     <div class="stack-6">
       <h1 class="h1">Data Control Center</h1>
-      <div class="muted">Run database connectivity checks, safe endpoint test loads, incremental validation, and sign-off review.</div>
+      <div class="muted">Run database connectivity checks, safe endpoint test loads, and review run history.</div>
     </div>
 
     {% if result %}
@@ -65,19 +65,6 @@
           </div>
           <button class="btn btn-primary btn-md" type="submit" name="action" value="run_sample_db_test">Run Sample DB Test</button>
           <button class="btn btn-secondary btn-md" type="submit" name="action" value="verify_last_run">Verify Last Run in DB</button>
-        </form>
-      </div>
-    </div>
-
-    <div class="card">
-      <div class="card-header">
-        <h2 class="h2">Incremental Validation Test</h2>
-        <div class="muted">Runs 20 vs (10 + 10) validation for SalesOrders and records formal assessment.</div>
-      </div>
-      <div class="card-body">
-        <form method="post" class="row">
-          <input type="hidden" name="endpoint_name" value="{{ endpoint_name }}" />
-          <button class="btn btn-primary btn-md" type="submit" name="action" value="run_incremental_test">Run Incremental Test (20 vs 10 + 10)</button>
         </form>
       </div>
     </div>

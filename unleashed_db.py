@@ -13,7 +13,15 @@ class SetupRequiredError(RuntimeError):
 AUDIT_COLUMNS = ("RunType", "RunRef", "LoadedAt", "EndpointName")
 
 ENDPOINT_TABLES = {
+    "Customers": "unleashed.Customers",
+    "Invoices": "unleashed.Invoices",
+    "Products": "unleashed.Products",
+    "Warehouses": "unleashed.Warehouses",
+    "StockOnHand": "unleashed.StockOnHand",
+    "CreditNotes": "unleashed.CreditNotes",
+    "SalesShipments": "unleashed.SalesShipments",
     "SalesOrders": "unleashed.SalesOrders",
+    "Suppliers": "unleashed.Suppliers",
 }
 
 
@@ -210,22 +218,6 @@ def write_endpoint_rows(
         conn.commit()
 
     return {"rows_written": len(rows)}
-
-
-def fetch_rows_by_runref(endpoint_name: str, run_ref: str) -> List[Tuple[str, str]]:
-    table_name = _table_from_endpoint(endpoint_name)
-    with get_conn() as conn:
-        cur = conn.cursor()
-        cur.execute(
-            f"""
-            SELECT CAST([OrderGuid] AS NVARCHAR(255)) AS [OrderGuid],
-                   CAST([LineNumber] AS NVARCHAR(255)) AS [LineNumber]
-            FROM {table_name}
-            WHERE [RunRef] = ?
-            """,
-            run_ref,
-        )
-        return [(str(r[0]), str(r[1])) for r in cur.fetchall()]
 
 
 def log_run(payload: Dict[str, Any]) -> None:

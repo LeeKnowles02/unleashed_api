@@ -55,7 +55,7 @@ def run_endpoint_job(
         raise ValueError(f"Unsupported endpoint: {endpoint_name}")
 
     started_at = datetime.utcnow()
-    if mode not in {"full", "sample_test", "incremental_control", "incremental_batch"}:
+    if mode not in {"full", "sample_test"}:
         raise ValueError(f"Unsupported mode: {mode}")
 
     headers, rows, checkpoint_end = _fetch_sales_orders_rows(
