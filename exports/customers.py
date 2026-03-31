@@ -1,7 +1,7 @@
 from typing import Any, Dict, List, Tuple, Optional
 from unleashed_client import UnleashedClient
+from exports.paging import fetch_all_pages
 from exports.utils import parse_unleashed_dotnet_date
-from exports.utils_db import try_insert_raw
 
 ExportResult = Tuple[str, List[str], List[List[Any]]]
 
@@ -38,16 +38,12 @@ def _as_code(value: Any, code_key: str) -> Any:
 
 
 def from_api(client: UnleashedClient, *, run_id: Optional[str] = None, company_id: Optional[str] = None) -> ExportResult:
-    data: Dict[str, Any] = client.get("/Customers")
-    try_insert_raw(
+    pages = fetch_all_pages(
+        client,
+        "/Customers",
+        endpoint="Customers",
         run_id=run_id,
         company_id=company_id,
-        endpoint="Customers",
-        http_status=getattr(client, "last_status_code", None),
-        payload_obj=data,
-        request_url=getattr(client, "last_url", None),
-        page_number=1,
-        api_cursor=None,
     )
     headers = [
         "CustomerCode",
@@ -67,26 +63,27 @@ def from_api(client: UnleashedClient, *, run_id: Optional[str] = None, company_i
 
     rows: List[List[Any]] = []
 
-    for c in data.get("Items", []):
-        customer_type = _as_name(c.get("CustomerType"), "CustomerTypeName")
-        currency = _as_code(c.get("Currency"), "CurrencyCode")
+    for data in pages:
+        for c in data.get("Items", []):
+            customer_type = _as_name(c.get("CustomerType"), "CustomerTypeName")
+            currency = _as_code(c.get("Currency"), "CurrencyCode")
 
-        rows.append(
-            [
-                c.get("CustomerCode"),
-                c.get("CustomerName"),
-                customer_type,
-                c.get("Email"),
-                c.get("PhoneNumber"),
-                c.get("MobileNumber"),
-                c.get("Website"),
-                c.get("CustomerRef"),
-                c.get("DiscountRate"),
-                c.get("Taxable"),
-                currency,
-                c.get("Guid"),
-                parse_unleashed_dotnet_date(c.get("LastModifiedOn")),
-            ]
-        )
+            rows.append(
+                [
+                    c.get("CustomerCode"),
+                    c.get("CustomerName"),
+                    customer_type,
+                    c.get("Email"),
+                    c.get("PhoneNumber"),
+                    c.get("MobileNumber"),
+                    c.get("Website"),
+                    c.get("CustomerRef"),
+                    c.get("DiscountRate"),
+                    c.get("Taxable"),
+                    currency,
+                    c.get("Guid"),
+                    parse_unleashed_dotnet_date(c.get("LastModifiedOn")),
+                ]
+            )
 
     return "Customers", headers, rows
