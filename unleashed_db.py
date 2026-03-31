@@ -78,7 +78,10 @@ def _assert_columns_exist(cursor, qualified_table_name: str, required_columns: S
     if missing:
         raise SetupRequiredError(
             f"Missing required columns on {qualified_table_name}: {', '.join(missing)}. "
-            "Run the latest schema setup SQL, then retry."
+            "As dbo/admin: run unleashed_schema/patch_audit_columns_endpoint_tables.sql. "
+            "Or grant ALTER on schema unleashed to the app user (see "
+            "unleashed_schema/grant_alter_unleashed_to_app_user.sql), then run "
+            "python scripts/apply_audit_columns.py."
         )
 
 
