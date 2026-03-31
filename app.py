@@ -9,6 +9,7 @@ from openpyxl import Workbook
 from openpyxl.utils import get_column_letter
 import io
 import os
+import re
 import uuid
 from datetime import datetime
 from typing import Any, Dict, Optional, List
@@ -135,6 +136,19 @@ DASHBOARD_REPORTS = [
 ]
 
 
+ILLEGAL_XLSX_CHARS_RE = re.compile(r"[\x00-\x08\x0B-\x0C\x0E-\x1F]")
+
+
+def _sanitize_excel_value(value: Any) -> Any:
+    if isinstance(value, str):
+        return ILLEGAL_XLSX_CHARS_RE.sub("", value)
+    return value
+
+
+def _sanitize_excel_row(row: List[Any]) -> List[Any]:
+    return [_sanitize_excel_value(value) for value in row]
+
+
 def build_workbook(selected_keys):
     wb = Workbook()
     wb.remove(wb.active)
@@ -176,9 +190,9 @@ def build_workbook(selected_keys):
                         sheet_name, headers, rows = api_fn()
 
             ws = wb.create_sheet(title=sheet_name[:31])
-            ws.append(headers)
+            ws.append(_sanitize_excel_row(headers))
             for r in rows:
-                ws.append(r)
+                ws.append(_sanitize_excel_row(r))
 
             for cell in ws[1]:
                 cell.font = cell.font.copy(bold=True)
