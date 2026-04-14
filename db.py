@@ -41,6 +41,47 @@ def start_run(company_id: Optional[str] = None) -> str:
         conn.commit()
     return run_id
 
+
+def start_sync_run(run_id: str) -> None:
+    with get_conn() as conn:
+        cur = conn.cursor()
+        cur.execute(
+            """
+            INSERT INTO unleashed.sync_run (run_id, start_time, status, total_records, total_errors)
+            VALUES (?, SYSUTCDATETIME(), ?, ?, ?)
+            """,
+            run_id,
+            "IN_PROGRESS",
+            0,
+            0,
+        )
+        conn.commit()
+
+
+def finish_sync_run(
+    run_id: str,
+    status: str,
+    total_records: int,
+    total_errors: int,
+) -> None:
+    with get_conn() as conn:
+        cur = conn.cursor()
+        cur.execute(
+            """
+            UPDATE unleashed.sync_run
+            SET end_time = SYSUTCDATETIME(),
+                status = ?,
+                total_records = ?,
+                total_errors = ?
+            WHERE run_id = ?
+            """,
+            status,
+            total_records,
+            total_errors,
+            run_id,
+        )
+        conn.commit()
+
 def finish_run(run_id: str, status: str, notes: Optional[str] = None) -> None:
     with get_conn() as conn:
         cur = conn.cursor()

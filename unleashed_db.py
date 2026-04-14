@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import time
 from datetime import datetime
 from typing import Any, Dict, List, Sequence, Tuple
 
@@ -167,58 +168,187 @@ def write_endpoint_rows(
     schema_name, base_table = _split_table_name(table_name)
     ensure_audit_columns(endpoint_name)
     if not rows:
+        try:
+            from integration_log_writer import log_info
+
+            log_info(
+                f"Table upsert skipped for endpoint '{endpoint_name}': zero rows to write (target {table_name}); MERGE not executed.",
+                integration_name="azure_sql",
+                module_name="unleashed_db",
+                function_name="write_endpoint_rows",
+                event_type="table_upsert_skipped",
+                action="merge_upsert",
+                entity_name=table_name,
+                endpoint=endpoint_name,
+                status="SKIPPED",
+                detail="Transformation returned no rows; check API filters, pagination, and Unleashed data.",
+            )
+        except Exception:
+            pass
         return {"rows_written": 0}
 
-    with get_conn() as conn:
-        cur = conn.cursor()
-        pk_columns = _fetch_primary_keys(cur, schema_name, base_table)
-        if not pk_columns:
-            raise RuntimeError(f"No primary key found for {table_name}")
+    t0 = time.perf_counter()
+    try:
+        from integration_log_writer import log_error, log_info
 
-        loaded_at = datetime.utcnow()
-        final_columns = list(headers) + ["RunType", "RunRef", "LoadedAt", "EndpointName"]
-
-        values: List[Tuple[Any, ...]] = []
-        for row in rows:
-            values.append(tuple(row) + (run_type, run_ref, loaded_at, endpoint_name))
-
-        temp_table = "#tmp_unleashed_write"
-        cur.execute(
-            f"""
-            SELECT TOP 0 {', '.join(_quote(c) for c in final_columns)}
-            INTO {temp_table}
-            FROM {table_name}
-            """
+        log_info(
+            f"Table MERGE upsert starting: target={table_name}, endpoint_name={endpoint_name!r}, run_type={run_type!r}, "
+            f"run_ref={run_ref!r}, batch_row_count={len(rows)}, source_column_count={len(headers)} "
+            f"(plus audit columns RunType, RunRef, LoadedAt, EndpointName).",
+            integration_name="azure_sql",
+            module_name="unleashed_db",
+            function_name="write_endpoint_rows",
+            event_type="table_upsert_started",
+            action="merge_upsert",
+            step_name="temp_table_and_merge",
+            entity_name=table_name,
+            endpoint=endpoint_name,
+            status="STARTED",
+            record_count=len(rows),
+            detail="Pattern: load #temp from values, MERGE ON primary key, UPDATE non-PK columns, INSERT new keys.",
         )
+    except Exception:
+        pass
 
-        placeholders = ", ".join(["?"] * len(final_columns))
-        cur.executemany(
-            f"""
-            INSERT INTO {temp_table} ({', '.join(_quote(c) for c in final_columns)})
-            VALUES ({placeholders})
-            """,
-            values,
+    try:
+        with get_conn() as conn:
+            cur = conn.cursor()
+            pk_columns = _fetch_primary_keys(cur, schema_name, base_table)
+            if not pk_columns:
+                raise RuntimeError(f"No primary key found for {table_name}")
+
+            try:
+                from integration_log_writer import log_info
+
+                log_info(
+                    f"Resolved primary key for MERGE: table={table_name}, pk_columns={pk_columns}.",
+                    integration_name="azure_sql",
+                    module_name="unleashed_db",
+                    function_name="write_endpoint_rows",
+                    event_type="table_upsert_progress",
+                    action="merge_upsert",
+                    step_name="pk_resolved",
+                    entity_name=table_name,
+                    endpoint=endpoint_name,
+                    status="IN_PROGRESS",
+                )
+            except Exception:
+                pass
+
+            loaded_at = datetime.utcnow()
+            final_columns = list(headers) + ["RunType", "RunRef", "LoadedAt", "EndpointName"]
+
+            values: List[Tuple[Any, ...]] = []
+            for row in rows:
+                values.append(tuple(row) + (run_type, run_ref, loaded_at, endpoint_name))
+
+            temp_table = "#tmp_unleashed_write"
+            cur.execute(
+                f"""
+                SELECT TOP 0 {', '.join(_quote(c) for c in final_columns)}
+                INTO {temp_table}
+                FROM {table_name}
+                """
+            )
+
+            placeholders = ", ".join(["?"] * len(final_columns))
+            t_bulk = time.perf_counter()
+            cur.executemany(
+                f"""
+                INSERT INTO {temp_table} ({', '.join(_quote(c) for c in final_columns)})
+                VALUES ({placeholders})
+                """,
+                values,
+            )
+            bulk_ms = int((time.perf_counter() - t_bulk) * 1000)
+            try:
+                from integration_log_writer import log_info
+
+                log_info(
+                    f"Staging complete: inserted {len(values)} row(s) into session temp table {temp_table} in {bulk_ms} ms.",
+                    integration_name="azure_sql",
+                    module_name="unleashed_db",
+                    function_name="write_endpoint_rows",
+                    event_type="table_bulk_insert_staging_completed",
+                    action="insert_temp",
+                    step_name=temp_table,
+                    entity_name=table_name,
+                    endpoint=endpoint_name,
+                    status="SUCCESS",
+                    record_count=len(values),
+                    duration_ms=bulk_ms,
+                )
+            except Exception:
+                pass
+
+            on_clause = " AND ".join([f"target.{_quote(c)} = src.{_quote(c)}" for c in pk_columns])
+            update_columns = [c for c in final_columns if c not in pk_columns]
+            update_set = ", ".join([f"target.{_quote(c)} = src.{_quote(c)}" for c in update_columns])
+            insert_cols = ", ".join(_quote(c) for c in final_columns)
+            insert_values = ", ".join([f"src.{_quote(c)}" for c in final_columns])
+
+            t_merge = time.perf_counter()
+            cur.execute(
+                f"""
+                MERGE {table_name} AS target
+                USING {temp_table} AS src
+                ON {on_clause}
+                WHEN MATCHED THEN
+                  UPDATE SET {update_set}
+                WHEN NOT MATCHED BY TARGET THEN
+                  INSERT ({insert_cols})
+                  VALUES ({insert_values});
+                """
+            )
+            merge_ms = int((time.perf_counter() - t_merge) * 1000)
+            conn.commit()
+    except Exception as exc:
+        total_ms = int((time.perf_counter() - t0) * 1000)
+        try:
+            from integration_log_writer import log_error
+
+            log_error(
+                f"Table MERGE upsert failed after {total_ms} ms: target={table_name}, endpoint={endpoint_name!r}, "
+                f"run_ref={run_ref!r}, attempted_batch_rows={len(rows)}.",
+                exc=exc,
+                integration_name="azure_sql",
+                module_name="unleashed_db",
+                function_name="write_endpoint_rows",
+                event_type="table_upsert_failed",
+                action="merge_upsert",
+                entity_name=table_name,
+                endpoint=endpoint_name,
+                status="FAIL",
+                duration_ms=total_ms,
+                record_count=len(rows),
+                detail="Transaction rolled back. Check PK mismatch, missing columns, data types, and unleashed schema. "
+                "Re-run after fixing dbo/unleashed DDL or row shape.",
+            )
+        except Exception:
+            pass
+        raise
+
+    total_ms = int((time.perf_counter() - t0) * 1000)
+    try:
+        from integration_log_writer import log_info
+
+        log_info(
+            f"Table MERGE upsert completed: target={table_name}, committed batch of {len(rows)} source row(s) in {total_ms} ms "
+            f"(MERGE timing includes match/insert/update; per-operation insert/update counts require OUTPUT clause — not captured here).",
+            integration_name="azure_sql",
+            module_name="unleashed_db",
+            function_name="write_endpoint_rows",
+            event_type="table_upsert_completed",
+            action="merge_upsert",
+            entity_name=table_name,
+            endpoint=endpoint_name,
+            status="SUCCESS",
+            record_count=len(rows),
+            duration_ms=total_ms,
+            detail="RowsWritten in RunLog equals batch size; for exact INSERT vs UPDATE split, extend MERGE with OUTPUT.",
         )
-
-        on_clause = " AND ".join([f"target.{_quote(c)} = src.{_quote(c)}" for c in pk_columns])
-        update_columns = [c for c in final_columns if c not in pk_columns]
-        update_set = ", ".join([f"target.{_quote(c)} = src.{_quote(c)}" for c in update_columns])
-        insert_cols = ", ".join(_quote(c) for c in final_columns)
-        insert_values = ", ".join([f"src.{_quote(c)}" for c in final_columns])
-
-        cur.execute(
-            f"""
-            MERGE {table_name} AS target
-            USING {temp_table} AS src
-            ON {on_clause}
-            WHEN MATCHED THEN
-              UPDATE SET {update_set}
-            WHEN NOT MATCHED BY TARGET THEN
-              INSERT ({insert_cols})
-              VALUES ({insert_values});
-            """
-        )
-        conn.commit()
+    except Exception:
+        pass
 
     return {"rows_written": len(rows)}
 

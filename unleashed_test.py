@@ -5,6 +5,7 @@ import os
 import uuid
 from typing import Any, Dict
 
+from integration_log_writer import log_error, log_info
 from unleashed_db import (
     SetupRequiredError,
     clear_connection_test_data,
@@ -29,6 +30,17 @@ def _env_name() -> str:
 def run_connection_test(triggered_by: str = "ui") -> Dict[str, Any]:
     started = datetime.utcnow()
     run_ref = _new_run_ref("CONN_TEST")
+    log_info(
+        f"UI database connection test started: will DELETE+INSERT 10 rows into unleashed.ConnectionTest (run_ref={run_ref!r}, triggered_by={triggered_by!r}).",
+        integration_name="azure_sql",
+        module_name="unleashed_test",
+        function_name="run_connection_test",
+        event_type="database_connection_test_started",
+        action="insert_connection_test_rows",
+        entity_name="unleashed.ConnectionTest",
+        status="STARTED",
+        detail="Uses unleashed_db.insert_connection_test_rows; failure indicates connectivity, permissions, or missing control tables.",
+    )
     try:
         result = insert_connection_test_rows()
         status = "PASS"
@@ -39,11 +51,35 @@ def run_connection_test(triggered_by: str = "ui") -> Dict[str, Any]:
         status = "FAIL"
         message = "Database setup missing."
         error_message = str(exc)
+        log_error(
+            "Database connection test failed: required unleashed control tables or columns are missing.",
+            exc=exc,
+            integration_name="azure_sql",
+            module_name="unleashed_test",
+            function_name="run_connection_test",
+            event_type="database_connection_test_failed",
+            action="insert_connection_test_rows",
+            entity_name="unleashed.ConnectionTest",
+            status="FAIL",
+            detail="Run unleashed_schema setup SQL as admin; see SetupRequiredError message for missing objects.",
+        )
     except Exception as exc:
         result = {"rows_written": 0}
         status = "FAIL"
         message = "Database connection test failed."
         error_message = str(exc)
+        log_error(
+            "Database connection test failed: unexpected error during insert_connection_test_rows.",
+            exc=exc,
+            integration_name="azure_sql",
+            module_name="unleashed_test",
+            function_name="run_connection_test",
+            event_type="database_connection_test_failed",
+            action="insert_connection_test_rows",
+            entity_name="unleashed.ConnectionTest",
+            status="FAIL",
+            detail="Check AZURE_SQL_* credentials, firewall, ODBC Driver 18, and SQL error in stack trace.",
+        )
 
     finished = datetime.utcnow()
     log_run(
@@ -64,6 +100,20 @@ def run_connection_test(triggered_by: str = "ui") -> Dict[str, Any]:
             "Environment": _env_name(),
         }
     )
+    if status == "PASS":
+        log_info(
+            f"Database connection test succeeded: wrote {result.get('rows_written', 0)} row(s) to unleashed.ConnectionTest in "
+            f"{int((finished - started).total_seconds())} s (run_ref={run_ref!r}).",
+            integration_name="azure_sql",
+            module_name="unleashed_test",
+            function_name="run_connection_test",
+            event_type="database_connection_test_completed",
+            action="insert_connection_test_rows",
+            entity_name="unleashed.ConnectionTest",
+            status="SUCCESS",
+            record_count=result.get("rows_written"),
+            duration_ms=int((finished - started).total_seconds() * 1000),
+        )
     return {
         "status": status,
         "message": message if status == "PASS" else f"{message} Error: {error_message}",
