@@ -47,6 +47,20 @@ _SENSITIVE_HEADER_KEYS = frozenset(
 )
 
 _TABLE_EXISTS_CACHE: Optional[bool] = None
+ALLOWED_STATUS_VALUES = frozenset({"SUCCESS", "FAILED", "IN_PROGRESS", "WARNING"})
+_STATUS_NORMALIZATION = {
+    "PASS": "SUCCESS",
+    "OK": "SUCCESS",
+    "DONE": "SUCCESS",
+    "COMPLETE": "SUCCESS",
+    "COMPLETED": "SUCCESS",
+    "FAIL": "FAILED",
+    "ERROR": "FAILED",
+    "STARTED": "IN_PROGRESS",
+    "RUNNING": "IN_PROGRESS",
+    "SKIPPED": "WARNING",
+    "DEGRADED": "WARNING",
+}
 
 
 def set_correlation_id(value: Optional[str] = None) -> str:
@@ -180,6 +194,16 @@ def _reset_table_cache() -> None:
     _TABLE_EXISTS_CACHE = None
 
 
+def normalize_status(value: Optional[str]) -> str:
+    raw = (value or "").strip().upper()
+    if not raw:
+        return "IN_PROGRESS"
+    normalized = _STATUS_NORMALIZATION.get(raw, raw)
+    if normalized not in ALLOWED_STATUS_VALUES:
+        return "WARNING"
+    return normalized
+
+
 def log_event(
     log_level: str,
     message: str,
@@ -220,6 +244,7 @@ def log_event(
     cid = correlation_id if correlation_id is not None else get_correlation_id()
     comp = company_id if company_id is not None else get_company_id()
 
+    normalized_status = normalize_status(status)
     row = {
         "project_name": PROJECT_NAME,
         "integration_name": integration_name,
@@ -235,7 +260,7 @@ def log_event(
         "entity_name": entity_name,
         "action": action,
         "step_name": step_name,
-        "status": status,
+        "status": normalized_status,
         "message": message,
         "detail": detail,
         "payload_summary": payload_summary,

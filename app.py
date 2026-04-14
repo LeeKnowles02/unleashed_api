@@ -1,5 +1,5 @@
 from dotenv import load_dotenv
-from db import start_run, finish_run
+from db import start_run, finish_run, start_sync_run, finish_sync_run
 from schedules import add_schedule, delete_schedule, list_schedules
 
 load_dotenv()
@@ -180,10 +180,30 @@ def build_workbook(selected_keys):
     )
 
     run_id = None
+    sync_run_id = str(uuid.uuid4())
+    total_records = 0
+    total_errors = 0
+    critical_failed = False
+    set_run_context(sync_run_id, company_for_run)
+    try:
+        start_sync_run(sync_run_id)
+    except Exception as exc:
+        log_warning(
+            "sync_run start insert failed; continuing export flow without run table persistence.",
+            integration_name="azure_sql",
+            module_name="app",
+            function_name="build_workbook",
+            event_type="run_started",
+            action="start_sync_run",
+            entity_name="unleashed.sync_run",
+            status="FAILED",
+            detail=str(exc),
+        )
     if cfg.USE_UNLEASHED_API and client.is_configured():
         try:
             run_id = start_run(company_id=company_for_run)
-            set_run_context(run_id, company_for_run)
+            sync_run_id = run_id
+            set_run_context(sync_run_id, company_for_run)
             log_info(
                 f"ETL run started: dbo.etl_run run_id={run_id!r}, company_id={company_for_run!r} (used for raw.api_payload and correlation in integration_log).",
                 integration_name="azure_sql",
@@ -268,6 +288,7 @@ def build_workbook(selected_keys):
             fetch_t0 = time.perf_counter()
             if "generator" in export:
                 sheet_name, headers, rows = export["generator"]()
+                total_records += len(rows)
                 log_info(
                     f"Export {key!r} used static generator path (not Unleashed API).",
                     integration_name="unleashed_runner",
@@ -283,6 +304,7 @@ def build_workbook(selected_keys):
             else:
                 if not cfg.USE_UNLEASHED_API or not client.is_configured():
                     sheet_name, headers, rows = export["dummy"]()
+                    total_records += len(rows)
                     log_info(
                         f"Export {key!r} used built-in dummy data (API disabled or client not configured).",
                         integration_name="unleashed_runner",
@@ -318,6 +340,7 @@ def build_workbook(selected_keys):
                         sheet_name, headers, rows = api_fn()
 
                     fetch_ms = int((time.perf_counter() - fetch_t0) * 1000)
+                    total_records += len(rows)
                     log_info(
                         f"Export {key!r} completed Unleashed API path: sheet_name={sheet_name!r}, columns={len(headers)}, "
                         f"data_rows={len(rows)}, duration_ms={fetch_ms}.",
@@ -433,6 +456,8 @@ def build_workbook(selected_keys):
                         },
                     )
                 except Exception as db_exc:
+                    total_errors += 1
+                    critical_failed = True
                     finished = datetime.utcnow()
                     log_error(
                         f"Azure SQL sync failed for sheet {sheet_name!r} (run_ref={run_ref!r}): MERGE/transaction error after Excel build.",
@@ -524,10 +549,12 @@ def build_workbook(selected_keys):
         return wb
 
     except Exception as e:
+        total_errors += 1
+        critical_failed = True
         if run_id:
             finish_run(run_id, "FAILED", notes=str(e))
             log_error(
-                f"ETL run finished: run_id={run_id!r}, status=FAILED — {e!s}.",
+                f"ETL run finished: run_id={run_id!r}, status=FAILED - {e!s}.",
                 exc=e,
                 integration_name="azure_sql",
                 module_name="app",
@@ -552,6 +579,40 @@ def build_workbook(selected_keys):
             )
         raise
     finally:
+        final_run_status = "FAILED" if critical_failed else "SUCCESS"
+        try:
+            finish_sync_run(
+                run_id=sync_run_id,
+                status=final_run_status,
+                total_records=total_records,
+                total_errors=total_errors,
+            )
+            log_info(
+                f"sync_run finalized: run_id={sync_run_id!r}, status={final_run_status}, total_records={total_records}, total_errors={total_errors}.",
+                integration_name="azure_sql",
+                module_name="app",
+                function_name="build_workbook",
+                event_type="run_finished",
+                action="finish_sync_run",
+                entity_name="unleashed.sync_run",
+                status=final_run_status,
+                run_id=sync_run_id,
+                record_count=total_records,
+                detail="Run status is FAILED when any critical step fails; otherwise SUCCESS.",
+            )
+        except Exception as exc:
+            log_warning(
+                "sync_run finalize failed; execution results available in integration_log only.",
+                integration_name="azure_sql",
+                module_name="app",
+                function_name="build_workbook",
+                event_type="run_finished",
+                action="finish_sync_run",
+                entity_name="unleashed.sync_run",
+                status="WARNING",
+                run_id=sync_run_id,
+                detail=str(exc),
+            )
         clear_run_context()
 
 
@@ -628,7 +689,7 @@ def build_exports_list(category: Optional[str] = None):
                 "key": key,
                 "label": meta.get("label", key),
                 "description": meta.get("description", ""),
-                "last_run": "—",
+                "last_run": "-",
                 "status": "Idle",
                 "status_class": "pill-neutral",
             }
@@ -956,7 +1017,7 @@ def run_selected():
     log_info(
         f"File download triggered: unleashed_exports.xlsx (multi-export), correlation_id={get_correlation_id()!r}, "
         f"exports={selected!r}, sheets={wb.sheetnames!r}, build_duration_ms={build_ms}, xlsx_save_duration_ms={save_ms}, "
-        f"response_body_bytes≈{payload_len}.",
+        f"response_body_bytes~{payload_len}.",
         integration_name="unleashed_runner",
         module_name="app",
         function_name="run_selected",
@@ -1004,7 +1065,7 @@ def run_single():
 
     log_info(
         f"File download triggered: {key}.xlsx, correlation_id={get_correlation_id()!r}, sheets={wb.sheetnames!r}, "
-        f"build_duration_ms={build_ms}, xlsx_save_duration_ms={save_ms}, response_body_bytes≈{payload_len}.",
+        f"build_duration_ms={build_ms}, xlsx_save_duration_ms={save_ms}, response_body_bytes~{payload_len}.",
         integration_name="unleashed_runner",
         module_name="app",
         function_name="run_single",
@@ -1042,3 +1103,5 @@ def schedule_delete(schedule_id: str):
 
 if __name__ == "__main__":
     app.run(debug=True, use_reloader=False)
+
+
