@@ -1,0 +1,134 @@
+{% extends 'layout.html' %}
+{% block title %}
+  Exchange Rates | Unleashed Runner
+{% endblock %}
+
+{% block content %}
+  <div class="stack-24">
+    <div class="space-between">
+      <div class="stack-6">
+        <h1 class="h1">Exchange Rates</h1>
+        <div class="muted">Load daily FX rates from Frankfurter and store them in Azure SQL for Unleashed reporting.</div>
+      </div>
+      <form method="post" action="/unleashed/exchange-rates/run" data-loader-form="true" data-loader-message="Loading latest exchange rates...">
+        <button
+          class="btn btn-primary btn-md js-loader-trigger"
+          type="submit"
+          data-loader-message="Loading latest exchange rates..."
+          data-loader-button-text="Loading..."
+        >
+          Load Latest Exchange Rates
+        </button>
+      </form>
+    </div>
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        <div class="stack-10">
+          {% for category, message in messages %}
+          <div class="card">
+            <div class="card-body">
+              <span class="pill {% if category == 'success' %}pill-success{% else %}pill-danger{% endif %}">
+                {{ 'SUCCESS' if category == 'success' else 'FAILED' }}
+              </span>
+              <div style="margin-top: 8px;">{{ message }}</div>
+            </div>
+          </div>
+          {% endfor %}
+        </div>
+      {% endif %}
+    {% endwith %}
+
+    {% if page_error %}
+    <div class="card">
+      <div class="card-body">
+        <span class="pill pill-danger">FAILED</span>
+        <div style="margin-top: 8px;">{{ page_error }}</div>
+      </div>
+    </div>
+    {% endif %}
+
+    <div class="card">
+      <div class="card-header">
+        <h2 class="h2">Latest Loaded Exchange Rates</h2>
+      </div>
+      <div class="card-body">
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Rate Date</th>
+                <th>Base Currency</th>
+                <th>Quote Currency</th>
+                <th>Rate</th>
+                <th>Provider</th>
+                <th>Loaded At UTC</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% if rates %}
+                {% for row in rates %}
+                <tr>
+                  <td>{{ row[0] }}</td>
+                  <td>{{ row[1] }}</td>
+                  <td>{{ row[2] }}</td>
+                  <td>{{ row[3] }}</td>
+                  <td>{{ row[4] or '—' }}</td>
+                  <td class="muted">{{ row[5] }}</td>
+                </tr>
+                {% endfor %}
+              {% else %}
+                <tr>
+                  <td colspan="6" class="muted">No exchange rates found yet.</td>
+                </tr>
+              {% endif %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-header">
+        <h2 class="h2">Recent Process Logs</h2>
+        <div class="muted">ProcessName = 'Unleashed Exchange Rates Load'</div>
+      </div>
+      <div class="card-body">
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Log ID</th>
+                <th>Action Name</th>
+                <th>Status</th>
+                <th>Detail</th>
+                <th>Error Message</th>
+                <th>Started At UTC</th>
+                <th>Finished At UTC</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% if logs %}
+                {% for row in logs %}
+                <tr>
+                  <td>{{ row[0] }}</td>
+                  <td>{{ row[2] }}</td>
+                  <td>{{ row[3] }}</td>
+                  <td class="muted">{{ row[4] or '—' }}</td>
+                  <td class="muted">{{ row[5] or '—' }}</td>
+                  <td class="muted">{{ row[6] }}</td>
+                  <td class="muted">{{ row[7] or '—' }}</td>
+                </tr>
+                {% endfor %}
+              {% else %}
+                <tr>
+                  <td colspan="7" class="muted">No process logs found yet.</td>
+                </tr>
+              {% endif %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+{% endblock %}

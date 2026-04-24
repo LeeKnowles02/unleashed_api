@@ -4,7 +4,7 @@ from schedules import add_schedule, delete_schedule, list_schedules
 
 load_dotenv()
 
-from flask import Flask, redirect, render_template, request, Response
+from flask import Flask, redirect, render_template, request, Response, flash
 from openpyxl import Workbook
 from openpyxl.utils import get_column_letter
 import io
@@ -42,6 +42,11 @@ from unleashed_test import (
     clear_test_rows,
     run_connection_test,
     run_sample_db_test,
+)
+from exchange_rates_service import (
+    get_latest_exchange_rates,
+    get_latest_process_logs,
+    load_latest_exchange_rates,
 )
 from exports import (
     sales_orders,
@@ -631,6 +636,7 @@ def run_export(key: str, **kwargs):
 
 
 app = Flask(__name__, template_folder="templates", static_folder="static")
+app.secret_key = os.getenv("FLASK_SECRET_KEY", "unleashed-dev-secret")
 
 
 @app.before_request
@@ -764,6 +770,44 @@ def ui_showcase():
 @app.route("/settings")
 def settings():
     return render_template("settings.html", active_page="settings")
+
+
+@app.route("/unleashed/exchange-rates", methods=["GET"])
+def unleashed_exchange_rates():
+    rates = []
+    logs = []
+    page_error = None
+    try:
+        rates = get_latest_exchange_rates(limit=100)
+    except Exception as exc:
+        page_error = f"Could not read exchange rates: {exc}"
+    try:
+        logs = get_latest_process_logs(limit=25)
+    except Exception as exc:
+        page_error = (page_error + " | " if page_error else "") + f"Could not read process logs: {exc}"
+
+    return render_template(
+        "exchange_rates.html",
+        active_page="exchange_rates",
+        page_error=page_error,
+        rates=rates,
+        logs=logs,
+    )
+
+
+@app.route("/unleashed/exchange-rates/run", methods=["POST"])
+def run_unleashed_exchange_rates():
+    try:
+        result = load_latest_exchange_rates()
+        flash(
+            "Exchange rates load succeeded: "
+            f"{result['rows_loaded']} rate(s), date {result['rate_date']}, "
+            f"base {result['base_currency']}, provider {result['provider']}.",
+            "success",
+        )
+    except Exception as exc:
+        flash(f"Exchange rates load failed: {exc}", "error")
+    return redirect("/unleashed/exchange-rates")
 
 
 def build_control_summary(endpoint_name: str = "SalesOrders") -> Dict[str, Any]:

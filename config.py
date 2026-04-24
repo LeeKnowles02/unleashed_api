@@ -17,3 +17,11 @@ class Config:
         REQUEST_TIMEOUT_SECONDS = int(_raw_timeout)
     except ValueError:
         REQUEST_TIMEOUT_SECONDS = 30
+
+    FRANKFURTER_BASE_URL = os.getenv(
+        "FRANKFURTER_BASE_URL",
+        "https://api.frankfurter.dev/v2/rates",
+    )
+    FRANKFURTER_BASE = os.getenv("FRANKFURTER_BASE", "USD").strip().upper()
+    FRANKFURTER_QUOTES = os.getenv("FRANKFURTER_QUOTES", "ZAR,GBP,EUR")
+    FRANKFURTER_PROVIDER = os.getenv("FRANKFURTER_PROVIDER", "ECB").strip()

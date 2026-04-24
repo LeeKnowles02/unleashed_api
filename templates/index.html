@@ -15,7 +15,15 @@
       {% else %}
       <div class="row">
         <button class="btn btn-secondary btn-md" type="button">Settings</button>
-        <button class="btn btn-primary btn-md" type="submit" form="bulkRunForm">Run Selected</button>
+        <button
+          class="btn btn-primary btn-md js-loader-trigger"
+          type="submit"
+          form="bulkRunForm"
+          data-loader-message="Running selected exports..."
+          data-loader-button-text="Running..."
+        >
+          Run Selected
+        </button>
       </div>
       {% endif %}
     </div>
@@ -123,7 +131,7 @@
         <div class="muted">UI note: when using the live Unleashed API, exports fetch all available pages for that endpoint before building the file and syncing to SQL.</div>
       </div>
       <div class="card-body">
-        <form id="bulkRunForm" method="post" action="/run-selected">
+        <form id="bulkRunForm" method="post" action="/run-selected" data-loader-form="true" data-loader-message="Running export...">
           <div class="table-wrap">
             <table>
               <thead>
@@ -146,7 +154,18 @@
                   <td class="muted">{{ e.last_run }}</td>
                   <td><span class="pill {{ e.status_class }}">{{ e.status }}</span></td>
                   <td class="td-action">
-                    <button class="btn btn-secondary btn-sm" type="submit" formaction="/run-single" formmethod="post" name="export" value="{{ e.key }}">Run</button>
+                    <button
+                      class="btn btn-secondary btn-sm js-loader-trigger"
+                      type="submit"
+                      formaction="/run-single"
+                      formmethod="post"
+                      name="export"
+                      value="{{ e.key }}"
+                      data-loader-message="Processing {{ e.label }}..."
+                      data-loader-button-text="Running..."
+                    >
+                      Run
+                    </button>
                   </td>
                 </tr>
                 {% endfor %}
