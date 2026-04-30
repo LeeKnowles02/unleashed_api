@@ -41,6 +41,7 @@
           <a href="/exports/products" class="{% if active_page == 'products' %}active{% endif %}">Products & Cost Foundation</a>
           <a href="/exports/inventory" class="{% if active_page == 'inventory' %}active{% endif %}">Inventory</a>
           <a href="/exports/purchasing" class="{% if active_page == 'purchasing' %}active{% endif %}">Purchasing</a>
+          <a href="/unleashed/exchange-rates" class="{% if active_page == 'exchange_rates' %}active{% endif %}">Exchange Rates</a>
           <a href="/data-control" class="{% if active_page == 'data_control_center' %}active{% endif %}">Data Control Center</a>
           <a href="/ui" class="{% if active_page == 'ui' %}active{% endif %}">UI Showcase</a>
           <a href="/settings" class="{% if active_page == 'settings' %}active{% endif %}">Settings</a>
@@ -65,6 +66,19 @@
           {% endblock %}
         </div>
       </main>
+    </div>
+
+    <div id="globalLoader" class="loader hidden" aria-live="polite" aria-busy="true">
+      <div class="loader-content" role="status">
+        <div class="spinner" aria-hidden="true"></div>
+        <div id="loaderText" class="loader-text">Processing...</div>
+        <div class="loader-progress" aria-hidden="true">
+          <div class="loader-progress-indeterminate"></div>
+        </div>
+        <div class="loader-actions">
+          <button id="loaderCancelButton" type="button" class="btn btn-secondary btn-sm">Cancel</button>
+        </div>
+      </div>
     </div>
 
     <script>
@@ -96,6 +110,7 @@
         });
       })();
     </script>
+    <script src="{{ url_for('static', filename='js/loading.js') }}"></script>
     {% block scripts %}
     {% endblock %}
   </body>
