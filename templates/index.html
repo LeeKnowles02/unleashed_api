@@ -131,7 +131,14 @@
         <div class="muted">UI note: when using the live Unleashed API, exports fetch all available pages for that endpoint before building the file and syncing to SQL.</div>
       </div>
       <div class="card-body">
-        <form id="bulkRunForm" method="post" action="/run-selected" data-loader-form="true" data-loader-message="Running export...">
+        <form
+          id="bulkRunForm"
+          method="post"
+          action="/run-selected"
+          data-loader-form="true"
+          data-loader-message="Running export..."
+          data-loader-download="true"
+        >
           <div class="table-wrap">
             <table>
               <thead>

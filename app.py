@@ -1073,11 +1073,20 @@ def run_selected():
         detail="Client should receive attachment; if browser blocks download, check pop-up settings.",
     )
 
-    return Response(
+    response = Response(
         buf.getvalue(),
         mimetype="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
         headers={"Content-Disposition": "attachment; filename=unleashed_exports.xlsx"},
     )
+    download_token = request.form.get("download_token")
+    if download_token:
+        response.set_cookie(
+            "unleashed_download_token",
+            download_token,
+            max_age=120,
+            samesite="Lax",
+        )
+    return response
 
 
 @app.route("/run-single", methods=["POST"])
@@ -1121,11 +1130,20 @@ def run_single():
         duration_ms=build_ms + save_ms,
     )
 
-    return Response(
+    response = Response(
         body,
         mimetype="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
         headers={"Content-Disposition": f"attachment; filename={key}.xlsx"},
     )
+    download_token = request.form.get("download_token")
+    if download_token:
+        response.set_cookie(
+            "unleashed_download_token",
+            download_token,
+            max_age=120,
+            samesite="Lax",
+        )
+    return response
 
 
 @app.route("/schedule/add", methods=["POST"])

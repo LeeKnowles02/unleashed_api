@@ -3,6 +3,8 @@
   var loaderTextEl = null;
   var loaderCancelButtonEl = null;
   var isLoading = false;
+  var downloadPollIntervalId = null;
+  var downloadFallbackTimeoutId = null;
 
   function getLoaderElements() {
     if (!loaderEl) loaderEl = document.getElementById("globalLoader");
@@ -66,6 +68,14 @@
     loaderEl.classList.add("hidden");
     document.body.style.overflow = "";
     resetRunButtons();
+    if (downloadPollIntervalId) {
+      window.clearInterval(downloadPollIntervalId);
+      downloadPollIntervalId = null;
+    }
+    if (downloadFallbackTimeoutId) {
+      window.clearTimeout(downloadFallbackTimeoutId);
+      downloadFallbackTimeoutId = null;
+    }
   }
 
   function handleCancel() {
@@ -74,6 +84,53 @@
     // Server-side processing may continue until job cancellation is implemented.
     window.stop();
     hideLoader();
+  }
+
+  function readCookie(name) {
+    var prefix = name + "=";
+    var cookies = document.cookie ? document.cookie.split(";") : [];
+    for (var i = 0; i < cookies.length; i += 1) {
+      var c = cookies[i].trim();
+      if (c.indexOf(prefix) === 0) {
+        return decodeURIComponent(c.substring(prefix.length));
+      }
+    }
+    return null;
+  }
+
+  function startDownloadCompletionWatcher(form) {
+    if (!form || form.dataset.loaderDownload !== "true") return;
+    var token = "dl_" + Date.now() + "_" + Math.random().toString(36).slice(2, 10);
+    var tokenField = form.querySelector("input[name='download_token']");
+    if (!tokenField) {
+      tokenField = document.createElement("input");
+      tokenField.type = "hidden";
+      tokenField.name = "download_token";
+      form.appendChild(tokenField);
+    }
+    tokenField.value = token;
+
+    if (downloadPollIntervalId) {
+      window.clearInterval(downloadPollIntervalId);
+      downloadPollIntervalId = null;
+    }
+    if (downloadFallbackTimeoutId) {
+      window.clearTimeout(downloadFallbackTimeoutId);
+      downloadFallbackTimeoutId = null;
+    }
+
+    downloadPollIntervalId = window.setInterval(function () {
+      var doneToken = readCookie("unleashed_download_token");
+      if (doneToken && doneToken === token) {
+        document.cookie = "unleashed_download_token=; Max-Age=0; path=/";
+        hideLoader();
+      }
+    }, 500);
+
+    // Safety fallback so the UI does not remain locked forever.
+    downloadFallbackTimeoutId = window.setTimeout(function () {
+      hideLoader();
+    }, 10 * 60 * 1000);
   }
 
   function submitWithLoader(event) {
@@ -90,18 +147,9 @@
       form.dataset.loaderMessage ||
       "Running export...";
 
-    event.preventDefault();
     form.dataset.loadingSubmitted = "true";
+    startDownloadCompletionWatcher(form);
     showLoader(message, submitter);
-
-    // Allow one paint frame so the loader is visible before request starts.
-    requestAnimationFrame(function () {
-      if (typeof form.requestSubmit === "function") {
-        form.requestSubmit(submitter && submitter.form === form ? submitter : undefined);
-      } else {
-        form.submit();
-      }
-    });
   }
 
   function bindLoaderForms() {
