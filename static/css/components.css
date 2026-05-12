@@ -3,9 +3,15 @@
     box-sizing: border-box;
 }
 
+/*
+ * App shell (viewport layout)
+ * Reusable pattern for Xero Runner: root grid + fixed sidebar column + main
+ * with minmax(0, 1fr), overflow hidden on the shell/body, overflow-y auto on main.
+ */
 html,
 body {
     height: 100%;
+    overflow: hidden;
 }
 
 body {
@@ -18,15 +24,18 @@ body {
 
 .app {
     display: grid;
-    grid-template-columns: 260px 1fr;
+    grid-template-columns: 260px minmax(0, 1fr);
     height: 100vh;
     min-height: 0;
+    overflow: hidden;
 }
 
 .sidebar {
     display: flex;
     flex-direction: column;
     height: 100%;
+    min-height: 0;
+    overflow: hidden;
     border-right: 1px solid var(--border);
     background: var(--surface);
     padding: 18px 14px;
@@ -148,11 +157,16 @@ body {
 }
 
 .main {
+    min-height: 0;
+    overflow-y: auto;
+    overflow-x: hidden;
     padding: 22px 22px 40px;
 }
 
 .container {
+    width: 100%;
     max-width: var(--container-max);
+    min-width: 0;
 }
 
 .h1 {
@@ -199,6 +213,8 @@ body {
 
 /* Cards */
 .card {
+    min-width: 0;
+    max-width: 100%;
     border: 1px solid var(--border);
     border-radius: var(--radius-lg);
     background: var(--surface);
@@ -208,10 +224,14 @@ body {
 .card-header {
     padding: 16px 16px 12px;
     border-bottom: 1px solid var(--border);
+    min-width: 0;
+    overflow-wrap: break-word;
 }
 
 .card-body {
     padding: 16px;
+    min-width: 0;
+    overflow-wrap: break-word;
 }
 
 .btn {
@@ -342,12 +362,27 @@ body {
     border: 1px solid var(--border);
     border-radius: var(--radius-md);
     overflow: hidden;
+    max-width: 100%;
+    min-width: 0;
 }
 
 table {
     width: 100%;
+    max-width: 100%;
     border-collapse: collapse;
     font-size: 14px;
+}
+
+/* Dense data tables: stay within main width (no page-level horizontal scroll) */
+table.data-table {
+    table-layout: fixed;
+}
+
+table.data-table th,
+table.data-table td {
+    overflow-wrap: anywhere;
+    word-break: break-word;
+    vertical-align: top;
 }
 
 thead {
@@ -367,18 +402,62 @@ th {
     color: var(--text);
 }
 
-.row {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 10px;
-    align-items: center;
-}
-
 .space-between {
     display: flex;
     align-items: flex-start;
     justify-content: space-between;
     gap: 12px;
+    flex-wrap: wrap;
+}
+
+.space-between>.stack-6,
+.space-between>.stack-10,
+.space-between>.stack-14,
+.space-between>.stack-18,
+.space-between>.stack-24 {
+    min-width: 0;
+    flex: 1 1 200px;
+}
+
+.space-between>form {
+    flex: 0 1 auto;
+    max-width: 100%;
+}
+
+.space-between>.row {
+    flex: 0 1 auto;
+    max-width: 100%;
+    min-width: 0;
+}
+
+.space-between>.btn,
+.space-between>form .btn {
+    max-width: 100%;
+    white-space: normal;
+    text-align: center;
+    line-height: 1.25;
+}
+
+.space-between>.btn.btn-md,
+.space-between>.btn.btn-lg,
+.space-between>form .btn.btn-md,
+.space-between>form .btn.btn-lg {
+    height: auto;
+    min-height: 40px;
+    padding-top: 8px;
+    padding-bottom: 8px;
+}
+
+.space-between>.btn.btn-lg,
+.space-between>form .btn.btn-lg {
+    min-height: 44px;
+}
+
+.row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    align-items: center;
 }
 
 .hr {
