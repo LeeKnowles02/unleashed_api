@@ -3,9 +3,16 @@
     box-sizing: border-box;
 }
 
+/*
+ * App shell (viewport layout)
+ * Reusable for Xero Runner: html/body overflow hidden, .app grid 260px + minmax(0,1fr),
+ * .sidebar flex column (brand + .nav only), .main is the vertical
+ * scroll region. Tables: use .table-wrap; site-wide rules keep width in the main column.
+ */
 html,
 body {
     height: 100%;
+    overflow: hidden;
 }
 
 body {
@@ -18,15 +25,18 @@ body {
 
 .app {
     display: grid;
-    grid-template-columns: 260px 1fr;
+    grid-template-columns: 260px minmax(0, 1fr);
     height: 100vh;
     min-height: 0;
+    overflow: hidden;
 }
 
 .sidebar {
     display: flex;
     flex-direction: column;
     height: 100%;
+    min-height: 0;
+    overflow: hidden;
     border-right: 1px solid var(--border);
     background: var(--surface);
     padding: 18px 14px;
@@ -39,6 +49,7 @@ body {
     padding: 10px 10px 16px;
     border-bottom: 1px solid var(--border);
     margin-bottom: 14px;
+    flex-shrink: 0;
 }
 
 .brand-mark {
@@ -65,9 +76,8 @@ body {
     flex-direction: column;
     gap: 6px;
     margin-top: 12px;
-    flex: 1 1 0;
-    min-height: 0;
-    overflow-y: auto;
+    flex: 0 1 auto;
+    overflow: visible;
 }
 
 .nav a {
@@ -93,21 +103,6 @@ body {
     font-weight: 700;
 }
 
-.sidebar-options {
-    flex-shrink: 0;
-    margin-top: auto;
-    padding-top: 16px;
-    border-top: 1px solid var(--border);
-}
-
-.options-label {
-    font-size: 11px;
-    font-weight: 700;
-    text-transform: uppercase;
-    letter-spacing: 0.05em;
-    margin-bottom: 10px;
-}
-
 .theme-switcher {
     display: flex;
     flex-direction: column;
@@ -121,11 +116,14 @@ body {
 
 .theme-buttons {
     display: flex;
+    flex-wrap: wrap;
     gap: 4px;
+    max-width: 100%;
 }
 
 .theme-btn {
-    flex: 1;
+    flex: 1 1 100px;
+    min-width: 0;
     padding: 8px 10px;
     font-size: 12px;
     font-weight: 600;
@@ -148,11 +146,50 @@ body {
 }
 
 .main {
+    min-height: 0;
+    overflow-y: auto;
+    overflow-x: hidden;
     padding: 22px 22px 40px;
+    scrollbar-width: thin;
+    scrollbar-color: rgba(17, 24, 39, 0.22) transparent;
+}
+
+[data-theme="dark"] .main {
+    scrollbar-color: rgba(255, 255, 255, 0.22) transparent;
 }
 
 .container {
+    width: 100%;
     max-width: var(--container-max);
+    min-width: 0;
+}
+
+.main .container>* {
+    max-width: 100%;
+    min-width: 0;
+}
+
+/* WebKit scrollbars: thin thumb, transparent track (main, table strip) */
+.main::-webkit-scrollbar,
+.table-wrap::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+
+.main::-webkit-scrollbar-track,
+.table-wrap::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.main::-webkit-scrollbar-thumb,
+.table-wrap::-webkit-scrollbar-thumb {
+    background: rgba(17, 24, 39, 0.22);
+    border-radius: 999px;
+}
+
+[data-theme="dark"] .main::-webkit-scrollbar-thumb,
+[data-theme="dark"] .table-wrap::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.2);
 }
 
 .h1 {
@@ -199,6 +236,8 @@ body {
 
 /* Cards */
 .card {
+    min-width: 0;
+    max-width: 100%;
     border: 1px solid var(--border);
     border-radius: var(--radius-lg);
     background: var(--surface);
@@ -208,10 +247,29 @@ body {
 .card-header {
     padding: 16px 16px 12px;
     border-bottom: 1px solid var(--border);
+    min-width: 0;
+    overflow-wrap: break-word;
 }
 
 .card-body {
     padding: 16px;
+    min-width: 0;
+    overflow-wrap: break-word;
+}
+
+.card-body>form {
+    min-width: 0;
+    max-width: 100%;
+}
+
+.card-body .row {
+    max-width: 100%;
+    min-width: 0;
+}
+
+code {
+    overflow-wrap: anywhere;
+    word-break: break-word;
 }
 
 .btn {
@@ -341,13 +399,50 @@ body {
 .table-wrap {
     border: 1px solid var(--border);
     border-radius: var(--radius-md);
-    overflow: hidden;
+    max-width: 100%;
+    min-width: 0;
+    /* Horizontal scroll only inside this box if content is genuinely unbreakable */
+    overflow-x: auto;
+    overflow-y: visible;
+    -webkit-overflow-scrolling: touch;
 }
 
 table {
     width: 100%;
+    max-width: 100%;
     border-collapse: collapse;
     font-size: 14px;
+}
+
+/* All tables in .table-wrap: fixed layout + wrapping (site-wide; optional colgroup per page) */
+.table-wrap>table {
+    table-layout: fixed;
+}
+
+.table-wrap th,
+.table-wrap td {
+    overflow-wrap: anywhere;
+    word-break: break-word;
+    vertical-align: top;
+}
+
+.table-wrap .td-action .btn,
+.table-wrap .td-action form {
+    max-width: 100%;
+}
+
+.table-wrap .td-action .btn {
+    white-space: normal;
+    text-align: center;
+    line-height: 1.2;
+    min-width: 0;
+}
+
+.table-wrap .td-action .btn.btn-sm {
+    height: auto;
+    min-height: 34px;
+    padding-top: 6px;
+    padding-bottom: 6px;
 }
 
 thead {
@@ -367,18 +462,64 @@ th {
     color: var(--text);
 }
 
-.row {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 10px;
-    align-items: center;
-}
-
 .space-between {
     display: flex;
     align-items: flex-start;
     justify-content: space-between;
     gap: 12px;
+    flex-wrap: wrap;
+}
+
+.space-between>.stack-6,
+.space-between>.stack-10,
+.space-between>.stack-14,
+.space-between>.stack-18,
+.space-between>.stack-24 {
+    min-width: 0;
+    flex: 1 1 200px;
+}
+
+.space-between>form {
+    flex: 0 1 auto;
+    max-width: 100%;
+}
+
+.space-between>.row {
+    flex: 0 1 auto;
+    max-width: 100%;
+    min-width: 0;
+}
+
+.space-between>.btn,
+.space-between>form .btn {
+    max-width: 100%;
+    white-space: normal;
+    text-align: center;
+    line-height: 1.25;
+}
+
+.space-between>.btn.btn-md,
+.space-between>.btn.btn-lg,
+.space-between>form .btn.btn-md,
+.space-between>form .btn.btn-lg {
+    height: auto;
+    min-height: 40px;
+    padding-top: 8px;
+    padding-bottom: 8px;
+}
+
+.space-between>.btn.btn-lg,
+.space-between>form .btn.btn-lg {
+    min-height: 44px;
+}
+
+.row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    align-items: center;
+    min-width: 0;
+    max-width: 100%;
 }
 
 .hr {
@@ -396,7 +537,9 @@ th {
 
 .th-action,
 .td-action {
-    width: 160px;
+    width: 22%;
+    max-width: 168px;
+    min-width: 0;
     text-align: right;
 }
 
@@ -404,10 +547,35 @@ th {
     display: flex;
     align-items: center;
     justify-content: space-between;
+    flex-wrap: wrap;
     gap: 12px;
     margin-top: 14px;
     padding-top: 14px;
     border-top: 1px solid var(--border);
+    min-width: 0;
+}
+
+/* Dashboard report cards grid: never wider than main column */
+.report-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(min(100%, 280px), 1fr));
+    gap: 16px;
+    min-width: 0;
+}
+
+.report-card {
+    padding: 16px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    background: var(--surface);
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+    max-width: 100%;
+}
+
+.report-card .muted {
+    font-size: 13px;
 }
 
 .hidden {

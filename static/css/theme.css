@@ -1,4 +1,5 @@
 :root {
+  color-scheme: light;
   --brand: #d10f1f;
   --brand-600: #b90d1b;
   --brand-100: #ffe5e8;
@@ -29,6 +30,7 @@
 
 /* Dark theme – applied when html has data-theme="dark" */
 [data-theme="dark"] {
+  color-scheme: dark;
   --brand: #e63946;
   --brand-600: #d10f1f;
   --brand-100: #3d1a1e;
