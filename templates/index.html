@@ -37,7 +37,7 @@
       </div>
       <div class="card-body">
         <form method="post" action="/schedule/add" class="row" style="flex-wrap: wrap; gap: 12px; align-items: flex-end;">
-          <div class="stack-6" style="min-width: 200px;">
+          <div class="stack-6" style="min-width: min(200px, 100%);">
             <label class="muted" style="font-size: 12px; font-weight: 600;">Report</label>
             <select class="select" name="report_key" required>
               <option value="">Select a report…</option>
@@ -46,7 +46,7 @@
               {% endfor %}
             </select>
           </div>
-          <div class="stack-6" style="min-width: 160px;">
+          <div class="stack-6" style="min-width: min(160px, 100%);">
             <label class="muted" style="font-size: 12px; font-weight: 600;">Frequency</label>
             <select class="select" name="frequency">
               <option value="daily">Daily</option>
@@ -184,21 +184,4 @@
     </div>
     {% endif %}
   </div>
-
-  <style>
-    .report-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-      gap: 16px;
-    }
-    .report-card {
-      padding: 16px;
-      border: 1px solid var(--border);
-      border-radius: var(--radius-md);
-      background: var(--surface);
-      display: flex;
-      flex-direction: column;
-    }
-    .report-card .muted { font-size: 13px; }
-  </style>
 {% endblock %}
